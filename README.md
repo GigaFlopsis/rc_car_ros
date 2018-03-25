@@ -1,9 +1,12 @@
 # Autonomous RC vehicle for ROS
-
-This development includes of methods self-driving in indoor environment with used SLAM navigation [rplidar A2](https://www.slamtec.com/en/Lidar/A2#)
-
 ### [ROS](http://www.ros.org/) package to control an autonomous RC vehicle based on Raspberry Pi3.
 
+This development includes of methods self-driving in indoor environment with used SLAM navigation [rplidar A2](https://www.slamtec.com/en/Lidar/A2#)
+ > **Authors:** Dmitry Devitt, Konovalov Georgy<br/>
+ > **Maintainer:** Dmitry Devitt, devittdv@gmail.com <br/>
+ > **Affiliation:** [Raccoonlab](http://Raccoonlab.org), [Rirpc Sfedu](http://rirpc.ru)
+
+### [FAQ: how to make it work](https://github.com/GigaFlopsis/rc_car_ros/wiki)
 ![image](Resourse/car.png)
 
 ## Configuration:
