@@ -16,8 +16,39 @@ In current version, the platform has a lidar [rplidar A2](https://www.slamtec.co
 ## The current tasks of the project:
 * add Quaternion from gyroscope to Imu node
 * write a controller
-* create [gmapping](http://wiki.ros.org/gmapping) navigation
 * add [AMCL](http://wiki.ros.org/amcl)
 * add the interception control through the RC remote control (PWM)
 * add odometry using optical encoders
+
+## Installation Instructions (Ubuntu)
+To install this package with [ROS Kinetic](http://wiki.ros.org/kinetic/Installation/Ubuntu):
+
+1. Install additional system dependencies (swap indigo for kinetic as necessary):
+
+```
+sudo apt-get install python-wstool python-catkin-tools ros-indigo-cmake-modules libyaml-cpp-dev
+sudo apt-get install ros-kinetic-hector-slam ros-kinetic-map-server ros-kinetic-map-amcl ros-kinetic-map-amcl ros-kinetic-rplidar-ros  ros-kinetic-laser-scan-matcher
+```
+
+2. Set up a catkin workspace (if not already done):
+
+```
+mkdir -p ~/catkin_ws/src
+cd ~/catkin_ws/src
+catkin_init_workspace
+cd ~/catkin_ws/
+catkin_make
+echo source devel/setup.bash >> ~/.bashrc  
+```
+
+3. Clone repositories (if not already done):
+
+```
+cd ~/catkin_ws/src
+git clone https://github.com/GigaFlopsis/rc_car_ros.git
+cd ~/catkin_ws/
+catkin_make
+```
+
+
 
