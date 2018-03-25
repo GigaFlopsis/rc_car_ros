@@ -1,9 +1,18 @@
 <launch>
+
+  <arg name="map" default="/home/op/testMap/home.yaml"/>
+
   <!--gyro -->
   <!--node name="mpu6050_node" pkg="mpu6050" type="mpu6050_node"/-->
   <!--node pkg="rc_bringup" name="rc_node" type="rc_node.py" output="screen"/-->
   <!--init rplidar -->
   <include file="$(find rc_bringup)/launch/rplidar.launch"/>
 <node pkg="tf" type="static_transform_publisher" name="rtls_setup" args="0.085 0 0 0 0 0 base_link laser 100"/>
+
+
+ <!-- Run the map server -->
+  <node name="map_server" pkg="map_server" type="map_server" args=" $(arg map)" required="true" output="screen">
+      <param name="frame_id" value="/map" />
+  </node>
 
 </launch>
