@@ -2,7 +2,7 @@
 
 ### [ROS](http://www.ros.org/) package to control an autonomous RC vehicle based on Raspberry Pi3.
 
-![image](car.png)
+![image](Resourse/car.png)
 
 ## Configuration:
 In current version, the platform has a lidar [rplidar A2](https://www.slamtec.com/en/Lidar/A2#) and gyro [MPU6050](https://playground.arduino.cc/Main/MPU-6050).
