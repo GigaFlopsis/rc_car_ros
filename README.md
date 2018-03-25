@@ -1,5 +1,7 @@
 # Autonomous RC vehicle for ROS
 
+This development includes of methods self-driving in indoor environment with used SLAM navigation [rplidar A2](https://www.slamtec.com/en/Lidar/A2#)
+
 ### [ROS](http://www.ros.org/) package to control an autonomous RC vehicle based on Raspberry Pi3.
 
 ![image](Resourse/car.png)
@@ -14,7 +16,7 @@ In current version, the platform has a lidar [rplidar A2](https://www.slamtec.co
 * added Imu data from gyroscope MPU6050
 
 ## The current tasks of the project:
-* add Quaternion from gyroscope to Imu node
+* add Imu data from flight controller (cc3d)
 * write a controller
 * add [AMCL](http://wiki.ros.org/amcl)
 * add the interception control through the RC remote control (PWM)
@@ -23,7 +25,7 @@ In current version, the platform has a lidar [rplidar A2](https://www.slamtec.co
 ## Installation Instructions (Ubuntu)
 To install this package with [ROS Kinetic](http://wiki.ros.org/kinetic/Installation/Ubuntu):
 
-1. Install additional system dependencies (swap indigo for kinetic as necessary):
+1. Install additional system dependencies:
 
 ```
 sudo apt-get install python-wstool python-catkin-tools ros-indigo-cmake-modules libyaml-cpp-dev
