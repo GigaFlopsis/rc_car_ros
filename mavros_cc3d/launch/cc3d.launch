@@ -1,0 +1,23 @@
+<launch>
+	<!-- vim: set ft=xml noet : -->
+	<!-- example launch script for ArduPilotMega based FCU's -->
+
+	<arg name="fcu_url" default="/dev/ttyAMA0:57600" />
+	<arg name="gcs_url" default="" />
+	<arg name="tgt_system" default="1" />
+	<arg name="tgt_component" default="1" />
+	<arg name="log_output" default="screen" />
+
+	<include file="$(find mavros)/launch/node.launch">
+		<arg name="pluginlists_yaml" value="$(find mavros_cc3d)/launch/cc3d_pluginlists.yaml" />
+		<arg name="config_yaml" value="$(find mavros_cc3d)/launch/cc3d_config.yaml" />
+
+		<arg name="fcu_url" value="$(arg fcu_url)" />
+		<arg name="gcs_url" value="$(arg gcs_url)" />
+		<arg name="tgt_system" value="$(arg tgt_system)" />
+		<arg name="tgt_component" value="$(arg tgt_component)" />
+		<arg name="log_output" value="$(arg log_output)" />
+	</include>
+
+  <node pkg="drone_controll" type="imu_to_tf.py" name="imu_to_tf" respawn="true" />
+</launch>
