@@ -15,9 +15,9 @@ GPIO.setup(11,GPIO.OUT)
 servo = GPIO.PWM(7,50)
 motor = GPIO.PWM(11,50)
 servo.start(7.5)
-motor.start(7.4)
+motor.start(7.5)
 
-offset = 0.0
+offset = -5.0
 
 motor_power = 0.1
 
@@ -70,6 +70,7 @@ if __name__ == "__main__":
                     print ("time_clb > 1")
                     vel_msg = Twist()
                     set_rc_remote()
+		    motor.stop()
                 print("error")
             rate.sleep()
 

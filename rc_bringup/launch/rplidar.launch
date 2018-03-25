@@ -6,6 +6,4 @@
   <param name="inverted"            type="bool"   value="false"/>
   <param name="angle_compensate"    type="bool"   value="true"/>
   </node>
-
- <node pkg="tf" type="static_transform_publisher" name="rtls_setup" args="0.085 0 0 0 0 0 base_link laser 100"/>
 </launch>
