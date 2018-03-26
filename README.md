@@ -7,7 +7,8 @@ This development includes of methods self-driving in indoor environment with use
  > **Affiliation:** [Raccoonlab](http://Raccoonlab.org), [Rirpc Sfedu](http://rirpc.ru)
 
 ### [FAQ: how to make it work](https://github.com/GigaFlopsis/rc_car_ros/wiki)
-![image](Resourse/car.png)
+![image](Resourse/car.png)<br/>
+![image](Resourse/rviz.png)
 
 ## Configuration:
 In current version, the platform has a lidar [rplidar A2](https://www.slamtec.com/en/Lidar/A2#) and gyro [MPU6050](https://playground.arduino.cc/Main/MPU-6050).
