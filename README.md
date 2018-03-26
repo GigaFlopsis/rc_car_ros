@@ -23,5 +23,4 @@ In current version, the platform has a lidar [rplidar A2](https://www.slamtec.co
 * add Imu data from flight controller (cc3d)
 * write a controller
 * add [AMCL](http://wiki.ros.org/amcl)
-* add the interception control through the RC remote control (PWM)
 * add odometry using optical encoders
