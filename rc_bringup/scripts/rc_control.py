@@ -5,21 +5,21 @@ import rospy
 from geometry_msgs.msg import Twist, Vector3
 
 import RPi.GPIO as GPIO
+import pigpio
 import time
 import numpy as np
 
 # set GPIO params
-GPIO.setmode(GPIO.BOARD)
-GPIO.setup(7,GPIO.OUT)
-GPIO.setup(11,GPIO.OUT)
-servo = GPIO.PWM(7,50)
-motor = GPIO.PWM(11,50)
-servo.start(7.5)
-motor.start(7.5)
+pi = pigpio.pi()
+servo_pin = 4
+motor_pin = 17
+
+pi.set_servo_pulsewidth(servo_pin, 1500)
+pi.set_servo_pulsewidth(motor_pin, 1550)
 
 offset = -5.0
 
-motor_power = 0.1
+motor_power = 0.3
 
 vel_msg = Twist()
 
@@ -40,15 +40,14 @@ def vel_clb(data):
 
 def set_rc_remote():
     global vel_msg, motor_power
-    servo_val = valmap(vel_msg.angular.z, 1, -1, 0, 180)
-    servo.ChangeDutyCycle(get_angle_to_mills(servo_val+offset))
-    motor_val = valmap(vel_msg.linear.x, -1.0/motor_power, 1.0/motor_power, 3.4, 11.4)
-    motor.ChangeDutyCycle(motor_val)
+    servo_val = valmap(vel_msg.angular.z, 1, -1, 1000+offset, 2000+offset)
+    pi.set_servo_pulsewidth(servo_pin, servo_val)
+    motor_val = valmap(vel_msg.linear.x, -1.0/motor_power, 1.0/motor_power, 1050, 2050)
+    pi.set_servo_pulsewidth(motor_pin, motor_val)
 
 def valmap(value, istart, istop, ostart, ostop):
     val = ostart + (ostop - ostart) * ((value - istart) / (istop - istart))
     return np.clip(val, ostart, ostop)
-
 
 
 if __name__ == "__main__":
@@ -76,11 +75,13 @@ if __name__ == "__main__":
 
     except KeyboardInterrupt:
         print("ctrl+C exit")
-        motor.stop()
-        servo.stop()
+        pi.set_servo_pulsewidth(servo_pin, 0)
+        pi.set_servo_pulsewidth(motor_pin, 0)
+        pi.stop()
         GPIO.cleanup()
     finally:
         print("exit")
-        motor.stop()
-        servo.stop()
+        pi.set_servo_pulsewidth(servo_pin, 0)
+        pi.set_servo_pulsewidth(motor_pin, 0)
+        pi.stop()
         GPIO.cleanup()
