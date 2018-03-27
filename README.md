@@ -1,8 +1,14 @@
 # Autonomous RC vehicle for ROS
-
 ### [ROS](http://www.ros.org/) package to control an autonomous RC vehicle based on Raspberry Pi3.
 
-![image](car.png)
+This development includes of methods self-driving in indoor environment with used SLAM navigation [rplidar A2](https://www.slamtec.com/en/Lidar/A2#)
+ > **Authors:** Dmitry Devitt, Konovalov Georgy<br/>
+ > **Maintainer:** Dmitry Devitt, devittdv@gmail.com <br/>
+ > **Affiliation:** [Raccoonlab](http://Raccoonlab.org), [Rirpc Sfedu](http://rirpc.ru)
+
+### [FAQ: how to make it work](https://github.com/GigaFlopsis/rc_car_ros/wiki)
+![image](Resourse/car.png)<br/>
+![image](Resourse/rviz.jpg)
 
 ## Configuration:
 In current version, the platform has a lidar [rplidar A2](https://www.slamtec.com/en/Lidar/A2#) and gyro [MPU6050](https://playground.arduino.cc/Main/MPU-6050).
@@ -14,41 +20,7 @@ In current version, the platform has a lidar [rplidar A2](https://www.slamtec.co
 * added Imu data from gyroscope MPU6050
 
 ## The current tasks of the project:
-* add Quaternion from gyroscope to Imu node
+* add Imu data from flight controller (cc3d)
 * write a controller
 * add [AMCL](http://wiki.ros.org/amcl)
-* add the interception control through the RC remote control (PWM)
 * add odometry using optical encoders
-
-## Installation Instructions (Ubuntu)
-To install this package with [ROS Kinetic](http://wiki.ros.org/kinetic/Installation/Ubuntu):
-
-1. Install additional system dependencies (swap indigo for kinetic as necessary):
-
-```
-sudo apt-get install python-wstool python-catkin-tools ros-indigo-cmake-modules libyaml-cpp-dev
-sudo apt-get install ros-kinetic-hector-slam ros-kinetic-map-server ros-kinetic-map-amcl ros-kinetic-map-amcl ros-kinetic-rplidar-ros  ros-kinetic-laser-scan-matcher
-```
-
-2. Set up a catkin workspace (if not already done):
-
-```
-mkdir -p ~/catkin_ws/src
-cd ~/catkin_ws/src
-catkin_init_workspace
-cd ~/catkin_ws/
-catkin_make
-echo source devel/setup.bash >> ~/.bashrc  
-```
-
-3. Clone repositories (if not already done):
-
-```
-cd ~/catkin_ws/src
-git clone https://github.com/GigaFlopsis/rc_car_ros.git
-cd ~/catkin_ws/
-catkin_make
-```
-
-
-
