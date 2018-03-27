@@ -19,7 +19,7 @@ pi.set_servo_pulsewidth(motor_pin, 1550)
 
 offset = 47.0
 
-motor_power = 0.3
+motor_power = 0.2
 
 vel_msg = Twist()
 

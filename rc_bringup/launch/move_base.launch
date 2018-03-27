@@ -31,20 +31,10 @@
     <param name="local_costmap/robot_base_frame" value="$(arg base_frame_id)"/>
     <param name="DWAPlannerROS/global_frame_id" value="$(arg odom_frame_id)"/>
 
-
-    <remap from="cmd_vel" to="navigation_velocity_smoother/raw_cmd_vel"/>
+    <remap from="cmd_vel" to="rc_car/cmd_vel"/>
     <remap from="odom" to="$(arg odom_topic)"/>
     <remap from="scan" to="$(arg laser_topic)"/>
   </node>
-
-  <arg name="model" default="$(find ardupilot_sitl_gazebo_plugin)/urdf/rover.urdf"/>
-  <arg name="log_file" default="rover"/>
-  <!-- send the robot XML to param server -->
-  <param name="robot_description" command="
-    $(find xacro)/xacro.py '$(arg model)'
-    enable_ground_truth:=false
-    log_file:=$(arg log_file)"
-  />
 
 </launch>
 

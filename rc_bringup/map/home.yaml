@@ -1,4 +1,4 @@
-image: mymap.pgm
+image: home.pgm
 resolution: 0.050000
 origin: [-12.824999, -12.824999, 0.000000]
 negate: 0
