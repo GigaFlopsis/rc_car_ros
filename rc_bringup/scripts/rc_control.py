@@ -17,7 +17,7 @@ motor_pin = 17
 pi.set_servo_pulsewidth(servo_pin, 1500)
 pi.set_servo_pulsewidth(motor_pin, 1550)
 
-offset = -5.0
+offset = 45.0
 
 motor_power = 0.3
 
