@@ -1,0 +1,14 @@
+<launch>
+
+	<include file="$(find rc_bringup)/launch/localizacion.launch"/>
+	<!--include file="$(find ros_erle_rover_navigation)/launch/move_base.launch"/-->
+
+	<include file="$(find rc_bringup)/launch/odom_laser.launch"/>
+	<include file="$(find rc_bringup)/launch/tf.launch"/>
+	<include file="$(find ros_erle_rover_navigation)/launch/view_navigation2.launch"/>
+
+	<!-- Map server -->
+	<arg name="map_file" default="map.yaml"/>
+	<node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)" />
+
+</launch>
