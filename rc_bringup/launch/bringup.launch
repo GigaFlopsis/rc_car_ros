@@ -1,6 +1,6 @@
 <launch>
 
-  <arg name="map_file" default="$(find rc_bringup)/map/laba.yaml"/>
+  <arg name="map_file" default="$(find rc_bringup)/map/laba_209.yaml"/>
 
 	<!--gyro -->
 	<!--node name="mpu6050_node" pkg="mpu6050" type="mpu6050_node"/-->
