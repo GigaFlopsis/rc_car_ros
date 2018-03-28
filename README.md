@@ -18,9 +18,9 @@ In current version, the platform has a lidar [rplidar A2](https://www.slamtec.co
 * [ros_node for remote controll with joystick](https://github.com/turtlebot/turtlebot/tree/kinetic/turtlebot_teleop)
 * [hector_mapping](http://wiki.ros.org/hector_mapping) SLAM
 * added Imu data from gyroscope MPU6050
+* add [AMCL](http://wiki.ros.org/amcl)
+* add Imu data from flight controller (cc3d via mavros)
 
 ## The current tasks of the project:
-* add Imu data from flight controller (cc3d)
 * write a controller
-* add [AMCL](http://wiki.ros.org/amcl)
-* add odometry using optical encoders
+* add odometry using optical encoders (optional)
