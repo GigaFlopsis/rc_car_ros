@@ -16,11 +16,10 @@ These methods do not pretend to be original, most of it I borrowed from the proj
 ## Nodes:
 
 ### 1. Remote control
-The pyhton script for remote control car which is directly connected to the PWM outputs pin of the RPI.<br/>
-Ideally, you need to adjust the input data so that it matches the actual speed, this can be done by finding the relationship between the speed of the car and the output pulse.
-
-**file:** rc_bringup/scripts/rc_control.py<br/>
-**input type**: [geometry_msgs:Twist](http://docs.ros.org/api/geometry_msgs/html/msg/Twist.html)
+**file:** rc_control.py<br/>
+**Description:** The pyhton script for remote control car which is directly connected to the PWM outputs pin of the RPI.<br/>
+Ideally, you need to adjust the input data so that it matches the actual speed, this can be done by finding the relationship between the speed of the car and the output pulse.<br/>
+**input type**: [geometry_msgs:Twist](http://docs.ros.org/api/geometry_msgs/html/msg/Twist.html)<br/>
 where:
 
 ```
