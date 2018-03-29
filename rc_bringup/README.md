@@ -16,11 +16,12 @@ These methods do not pretend to be original, most of it I borrowed from the proj
 
 ## Nodes:
 
-### 1. Remote control
-**file:** rc_control.py<br/>
+### 1. rc_control.py<br/>
 **Description:** The pyhton script for remote control car which is directly connected to the PWM outputs pin of the RPI.<br/>
 Ideally, you need to adjust the input data so that it matches the actual speed, this can be done by finding the relationship between the speed of the car and the output pulse.<br/>
-**input type**: [geometry_msgs:Twist](http://docs.ros.org/api/geometry_msgs/html/msg/Twist.html)<br/>
+
+#### Subscribed Topics:
+rc_car/cmd_vel([geometry_msgs:Twist](http://docs.ros.org/api/geometry_msgs/html/msg/Twist.html))<br/>
 where:
 
 ```
@@ -33,4 +34,22 @@ linear:
     y: 0.0
     z: rotate
 ```
+#### Parameters:
+~cmd_vel (string, default: "rc_car/cmd_vel")<br/>
+&emsp;&emsp;*The topic of subscribed.<br/>*
+~motor_power (float, default: "0.2")<br/>
+&emsp;&emsp;*The maximum power that is fed to the motor.<br/>*
+~servo_pin (int, default:"4")<br/>
+&emsp;&emsp;*The pin out of servo PWM<br/>*
+~middle_servo (int, default:"1500")<br/>
+&emsp;&emsp;*The midle position of servo<br/>*
+~servo_offset (int, default:"47")<br/>
+&emsp;&emsp;*The offset of servo for to correct the middle pose<br/>*
+~motor_pin (int, default:"7")<br/>
+&emsp;&emsp;*The pin out of motor PWM<br/>*
+~middle_motor (int, default:"1550")<br/>
+&emsp;&emsp;*Zero position of motor<br/>*
+
+**input type**: [geometry_msgs:Twist](http://docs.ros.org/api/geometry_msgs/html/msg/Twist.html)<br/>
+
 **input type**: PWM pulse
