@@ -1,0 +1,16 @@
+<launch>
+
+  <arg name="map_file" default="$(find rc_bringup)/map/home.yaml"/>
+
+	<!--gyro -->
+	<!--node name="mpu6050_node" pkg="mpu6050" type="mpu6050_node"/-->
+
+	<!--remote controll -->	
+	<node pkg="rc_bringup" name="rc_node" type="rc_control.py" output="screen"/>
+  
+	<!-- Rplidar -->
+	<include file="$(find rc_bringup)/launch/rplidar.launch"/>
+
+	<!-- Hector -->
+	<include file="$(find rc_bringup)/launch/slam_mapping.launch"/>
+</launch>
