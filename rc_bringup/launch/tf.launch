@@ -16,7 +16,7 @@
 
 	<!-- base_link to base_laser -->  	
 	<node pkg="tf" type="static_transform_publisher" name="base_link_to_laser_link" 
-	      args="0.05 0 0.06 0 0 $(arg pi) base_link laser 10" />
+	      args="0.05 0 0.06 0 0 1.0 0 base_link laser 10" />
 
 	<!-- scanmatcher_frame to base_bootprint -->  	
 	<!-- node pkg="tf" type="static_transform_publisher" name="scanmatcher_frame_to_base_footprint" 
