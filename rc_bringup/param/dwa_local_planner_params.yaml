@@ -2,7 +2,7 @@ DWAPlannerROS:
 
 # Robot Configuration Parameters - Kobuki
   max_vel_x: 2.5  # 0.55
-  min_vel_x: 0.7
+  min_vel_x: 0.75
 
   max_vel_y: 0.0  # diff drive robot
   min_vel_y: 0.0  # diff drive robot
@@ -15,7 +15,7 @@ DWAPlannerROS:
   #   are non-negligible and small in place rotational velocities will be created.
 
   max_rot_vel: 1.0  # choose slightly less than the base's capability
-  min_rot_vel: 0.6  # this is the min angular velocity when there is negligible translational velocity
+  min_rot_vel: 0.7  # this is the min angular velocity when there is negligible translational velocity
   rot_stopped_vel: 0.7
 
   acc_lim_x: 5.5 # maximum is theoretically 2.0, but we 

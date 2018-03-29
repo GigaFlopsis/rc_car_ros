@@ -102,14 +102,14 @@ if __name__ == "__main__":
 
         rospy.Subscriber(cmd_vel_topic, Twist, vel_clb)
 
-        print ("RC_control params:"
+        print ("RC_control params: \n"
                "cmd_vel: %s \n"
                "servo_pin: %d \n"
                "middle_servo: %d \n"
                "servo_offset: %d \n"
                "motor_pin: %d \n"
                "middle_motor: %d \n"
-               "motor_power: %d \n" % (cmd_vel_topic, servo_pin,middle_servo,offset,motor_pin,middle_motor,motor_power))
+               "motor_power: %f \n" % (cmd_vel_topic, servo_pin,middle_servo,offset,motor_pin,middle_motor,motor_power))
         while not rospy.is_shutdown():
             try:
                 time_clb += 0.2
