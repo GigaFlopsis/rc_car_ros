@@ -4,6 +4,7 @@ These methods do not pretend to be original, most of it I borrowed from the proj
 
 ## Launch files
 1. **bringup.launch**	- Launches main modules for work in autonomous mode 
+2. **create_map.launch** - Launches for create map via hector slam
 2. **tf.launch**	- setup tf
 3. **mapping_default.launch**	- Hector slam node for created map  
 4. **navigation.launch**- Launch costmap and move_base ("move_base" yet disabled for debugging)
