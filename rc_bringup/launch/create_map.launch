@@ -4,8 +4,15 @@
 	<!--node name="mpu6050_node" pkg="mpu6050" type="mpu6050_node"/-->
 
 	<!--remote controll -->	
-	<node pkg="rc_bringup" name="rc_node" type="rc_control.py" output="screen"/>
-  
+	<node pkg="rc_bringup" name="rc_node" type="rc_control.py" respawn="true" output="screen">
+	<param name="cmd_vel" value="rc_car/cmd_vel"/>
+	<param name="motor_power" value="0.2"/>	
+	<param name="servo_pin" value="4"/>
+	<param name="middle_servo" value="1500"/>
+	<param name="servo_offset" value="47"/>    
+	<param name="motor_pin" value="7"/>
+	<param name="middle_motor" value="1550"/>
+</node>
 	<!-- Rplidar -->
 	<include file="$(find rc_bringup)/launch/rplidar.launch"/>
 
