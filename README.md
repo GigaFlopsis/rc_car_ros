@@ -8,7 +8,8 @@ This development includes of methods self-driving in indoor environment with use
 
 ## [Instruction](https://github.com/GigaFlopsis/rc_car_ros/wiki)<br/>
 ![image](Resourse/car.png)<br/>
-![image](Resourse/rviz.jpg)
+
+[![IMAGE ALT TEXT](http://img.youtube.com/vi/0fmgQAftFPY/0.jpg)](http://www.youtube.com/watch?v=0fmgQAftFPY "ROS Autonomous Navigation stack on RC car")
 
 ## Configuration:
 In current version, the platform has a lidar [rplidar A2](https://www.slamtec.com/en/Lidar/A2#) and gyro [MPU6050](https://playground.arduino.cc/Main/MPU-6050) (optional).
