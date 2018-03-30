@@ -10,7 +10,7 @@ from geometry_msgs.msg import TwistStamped, Twist
 
 import copy
 
-vel_topic = "/drone/velocity"
+vel_topic = "/rc_car/velocity"
 base_link = "map"
 child_link = "base_link"
 

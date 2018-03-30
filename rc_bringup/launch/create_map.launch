@@ -10,7 +10,7 @@
 	<param name="servo_pin" value="4"/>
 	<param name="middle_servo" value="1500"/>
 	<param name="servo_offset" value="47"/>    
-	<param name="motor_pin" value="7"/>
+	<param name="motor_pin" value="17"/>
 	<param name="middle_motor" value="1550"/>
 </node>
 	<!-- Rplidar -->

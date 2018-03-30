@@ -52,7 +52,6 @@ def vel_clb(data):
     vel_msg.angular.x = np.clip(vel_msg.angular.z, -1.0, 1.0)
     vel_msg.linear.x = np.clip(vel_msg.linear.x-vel_msg.linear.y, -1.0, 1.0)
     set_rc_remote()
-
     time_clb = 0.0
 
 def set_rc_remote():
