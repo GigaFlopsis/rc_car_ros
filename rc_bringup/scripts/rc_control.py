@@ -11,7 +11,7 @@ import numpy as np
 
 import rospy
 from geometry_msgs.msg import Twist, Vector3
-
+from rc_bringup import CarPwmContol
 
 # init params
 
@@ -24,12 +24,14 @@ offset = 47.0 # offset of servo
 
 motor_power = 0.2 # limit the power of the motor (1.0 max)
 cmd_vel_topic = "rc_car/cmd_vel" # output topic
+pwm_topic = "rc_car/pwm"
 
 pi = pigpio.pi()
 pi.set_servo_pulsewidth(servo_pin, middle_servo) # middle servo angle
 pi.set_servo_pulsewidth(motor_pin, middle_motor) # zero speed for motor (different depending on ESC)
 
 vel_msg = Twist()
+pwm_msg = CarPwmContol()
 
 rate = 5
 time_clb = 0.0
@@ -54,18 +56,34 @@ def vel_clb(data):
     set_rc_remote()
     time_clb = 0.0
 
-def set_rc_remote():
+def vel_clb_pwm(data):
+    """
+    Get PWM value from topic
+    :param data: velocity value
+    :type data: RcCarControl
+
+    """
+    global  pwm_msg, time_clb
+    pwm_msg = data
+    set_rc_remote()
+    time_clb = 0.0
+
+def set_rc_remote(use_pwm = False):
     """
     Recalculation velocity data to pulse and set to PWM servo and motor
     :return:
     """
-    global vel_msg, motor_power
-    # send servo
-    servo_val = valmap(vel_msg.angular.z, 1, -1, 1000+offset, 2000+offset)
-    pi.set_servo_pulsewidth(servo_pin, servo_val)
-    # send motor
-    motor_val = valmap(vel_msg.linear.x, -1.0/motor_power, 1.0/motor_power, 1050, 2050)
-    pi.set_servo_pulsewidth(motor_pin, motor_val)
+    global vel_msg, motor_power, pwm_msg
+    if use_pwm:
+        pi.set_servo_pulsewidth(servo_pin, pwm_msg.ServoPWM)
+        pi.set_servo_pulsewidth(motor_pin, pwm_msg.MotorPWM)
+    else:
+        # send servo
+        servo_val = valmap(vel_msg.angular.z, 1, -1, 1000+offset, 2000+offset)
+        pi.set_servo_pulsewidth(servo_pin, servo_val)
+        # send motor
+        motor_val = valmap(vel_msg.linear.x, -1.0/motor_power, 1.0/motor_power, 1050, 2050)
+        pi.set_servo_pulsewidth(motor_pin, motor_val)
 
 def valmap(value, istart, istop, ostart, ostop):
     """
@@ -82,7 +100,6 @@ def valmap(value, istart, istop, ostart, ostop):
     val = ostart + (ostop - ostart) * ((value - istart) / (istop - istart))
     return np.clip(val, ostart, ostop)
 
-
 if __name__ == "__main__":
     try:
         rospy.init_node("rc_control")
@@ -91,6 +108,7 @@ if __name__ == "__main__":
         # get args from ros params
         name_node = rospy.get_name()
         cmd_vel_topic = rospy.get_param(name_node + '/cmd_vel', cmd_vel_topic)
+        pwm_topic = rospy.get_param(name_node + '/pwm_topic', pwm_topic)
         servo_pin = rospy.get_param(name_node + '/servo_pin', servo_pin)
         middle_servo = rospy.get_param(name_node + '/middle_servo', middle_servo)
         offset = rospy.get_param(name_node + '/servo_offset', offset)
@@ -98,17 +116,18 @@ if __name__ == "__main__":
         middle_motor = rospy.get_param(name_node + '/middle_motor', middle_motor)
         motor_power = rospy.get_param(name_node + '/motor_power', motor_power)
 
-
         rospy.Subscriber(cmd_vel_topic, Twist, vel_clb)
+        rospy.Subscriber(pwm_topic, CarPwmContol, vel_clb_pwm)
 
         print ("RC_control params: \n"
-               "cmd_vel: %s \n"
+               "cmd_vel_topic: %s \n"
+               "pwm_toppic: %s \n"
                "servo_pin: %d \n"
                "middle_servo: %d \n"
                "servo_offset: %d \n"
                "motor_pin: %d \n"
                "middle_motor: %d \n"
-               "motor_power: %f \n" % (cmd_vel_topic, servo_pin,middle_servo,offset,motor_pin,middle_motor,motor_power))
+               "motor_power: %f \n" % (cmd_vel_topic, pwm_topic,servo_pin,middle_servo,offset,motor_pin,middle_motor,motor_power))
         while not rospy.is_shutdown():
             try:
                 time_clb += 0.2
@@ -120,7 +139,7 @@ if __name__ == "__main__":
                 if(time_clb > 1.0):     # if something is wrong to close pwm
                     vel_msg = Twist()
                     set_rc_remote()
-		    motor.stop()
+		        motor.stop()
                 print("error")
             rate.sleep()
 

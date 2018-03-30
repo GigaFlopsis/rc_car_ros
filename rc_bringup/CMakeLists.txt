@@ -10,7 +10,18 @@ project(rc_bringup)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
+  std_msgs
+  message_generation
 )
+
+## Declare ROS messages and services
+add_message_files(DIRECTORY msg FILES CarPwmContol.msg)
+## Generate added messages and services
+generate_messages(DEPENDENCIES std_msgs)
+
+## Declare a catkin package
+catkin_package()
+include_directories(include ${catkin_INCLUDE_DIRS})
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
