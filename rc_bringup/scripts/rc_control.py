@@ -90,14 +90,14 @@ if __name__ == "__main__":
         rate = rospy.Rate(rate)
 
         # get args from ros params
-        name_node = rospy.get_name();
-        cmd_vel_topic = rospy.get_param(name_node + '/cmd_vel', cmd_vel_topic);
-        servo_pin = rospy.get_param(name_node + '/servo_pin', servo_pin);
-        middle_servo = rospy.get_param(name_node + '/middle_servo', middle_servo);
-        offset = rospy.get_param(name_node + '/servo_offset', offset);
-        motor_pin = rospy.get_param(name_node + '/motor_pin', motor_pin);
-        middle_motor = rospy.get_param(name_node + '/middle_motor', middle_motor);
-        motor_power = rospy.get_param(name_node + '/motor_power', motor_power);
+        name_node = rospy.get_name()
+        cmd_vel_topic = rospy.get_param(name_node + '/cmd_vel', cmd_vel_topic)
+        servo_pin = rospy.get_param(name_node + '/servo_pin', servo_pin)
+        middle_servo = rospy.get_param(name_node + '/middle_servo', middle_servo)
+        offset = rospy.get_param(name_node + '/servo_offset', offset)
+        motor_pin = rospy.get_param(name_node + '/motor_pin', motor_pin)
+        middle_motor = rospy.get_param(name_node + '/middle_motor', middle_motor)
+        motor_power = rospy.get_param(name_node + '/motor_power', motor_power)
 
 
         rospy.Subscriber(cmd_vel_topic, Twist, vel_clb)
