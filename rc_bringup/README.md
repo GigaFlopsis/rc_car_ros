@@ -21,9 +21,10 @@ These methods do not pretend to be original, most of it I borrowed from the proj
 Ideally, you need to adjust the input data so that it matches the actual speed, this can be done by finding the relationship between the speed of the car and the output pulse.<br/>
 
 #### Subscribed Topics:
-rc_car/cmd_vel([geometry_msgs:Twist](http://docs.ros.org/api/geometry_msgs/html/msg/Twist.html))<br/>
-where:
+rc_car/cmd_vel ([geometry_msgs:Twist](http://docs.ros.org/api/geometry_msgs/html/msg/Twist.html))<br/>
+rc_car/pwm ([rc_bringup:CarPwmContol](https://github.com/GigaFlopsis/rc_car_ros/blob/master/rc_bringup/msg/CarPwmContol.msg))<br/>
 
+where Twist:
 ```
 linear:
     x: forwand + / - backward 
@@ -39,7 +40,9 @@ linear:
 
 #### Parameters:
 ~cmd_vel (string, default: "rc_car/cmd_vel")<br/>
-&emsp;&emsp;*The topic of subscribed.<br/>*
+&emsp;&emsp;*The vel topic of subscribed.<br/>*
+~pwm_topic (string, default: "rc_car/pwm")<br/>
+&emsp;&emsp;*The pwm topic of subscribed.<br/>*
 ~motor_power (float, default: "0.2")<br/>
 &emsp;&emsp;*The maximum power that is fed to the motor.<br/>*
 ~servo_pin (int, default:"4")<br/>
@@ -52,7 +55,6 @@ linear:
 &emsp;&emsp;*The pin out of motor PWM<br/>*
 ~middle_motor (int, default:"1550")<br/>
 &emsp;&emsp;*Zero position of motor<br/>*
-
 
 
 ### 2. tf_to_vel.py<br/>
