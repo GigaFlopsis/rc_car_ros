@@ -11,7 +11,7 @@ import numpy as np
 
 import rospy
 from geometry_msgs.msg import Twist, Vector3
-from rc_bringup import CarPwmContol
+from rc_bringup.msg import CarPwmContol
 
 # init params
 
@@ -25,6 +25,8 @@ offset = 47.0 # offset of servo
 motor_power = 0.2 # limit the power of the motor (1.0 max)
 cmd_vel_topic = "rc_car/cmd_vel" # output topic
 pwm_topic = "rc_car/pwm"
+
+intercept_remote = False
 
 pi = pigpio.pi()
 pi.set_servo_pulsewidth(servo_pin, middle_servo) # middle servo angle
@@ -65,7 +67,7 @@ def vel_clb_pwm(data):
     """
     global  pwm_msg, time_clb
     pwm_msg = data
-    set_rc_remote()
+    set_rc_remote(True)
     time_clb = 0.0
 
 def set_rc_remote(use_pwm = False):
@@ -73,15 +75,19 @@ def set_rc_remote(use_pwm = False):
     Recalculation velocity data to pulse and set to PWM servo and motor
     :return:
     """
-    global vel_msg, motor_power, pwm_msg
+    global vel_msg, motor_power, pwm_msg, intercept_remote
     if use_pwm:
-        pi.set_servo_pulsewidth(servo_pin, pwm_msg.ServoPWM)
-        pi.set_servo_pulsewidth(motor_pin, pwm_msg.MotorPWM)
+	if(pwm_msg.ServoPWM > 0):
+	        pi.set_servo_pulsewidth(servo_pin, pwm_msg.ServoPWM)
+	if(pwm_msg.MotorPWM > 0):
+		pi.set_servo_pulsewidth(motor_pin, pwm_msg.MotorPWM)
     else:
         # send servo
         servo_val = valmap(vel_msg.angular.z, 1, -1, 1000+offset, 2000+offset)
         pi.set_servo_pulsewidth(servo_pin, servo_val)
         # send motor
+	if(intercept_remote and (0.0 <vel_msg.linear.x < 0.9):
+		break
         motor_val = valmap(vel_msg.linear.x, -1.0/motor_power, 1.0/motor_power, 1050, 2050)
         pi.set_servo_pulsewidth(motor_pin, motor_val)
 
@@ -139,7 +145,7 @@ if __name__ == "__main__":
                 if(time_clb > 1.0):     # if something is wrong to close pwm
                     vel_msg = Twist()
                     set_rc_remote()
-		        motor.stop()
+	        motor.stop()
                 print("error")
             rate.sleep()
 
