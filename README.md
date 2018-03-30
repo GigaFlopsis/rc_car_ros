@@ -7,7 +7,7 @@ This development includes of methods self-driving in indoor environment with use
  > **Affiliation:** [Raccoonlab](http://Raccoonlab.org), [Rirpc Sfedu](http://rirpc.ru)
 
 ## [Instruction](https://github.com/GigaFlopsis/rc_car_ros/wiki)<br/>
-![image](Resourse/car.png)<br/>
+![image](https://ibb.co/cggQKn][img]https://preview.ibb.co/mCggs7/car.png)<br/>
 
 [![IMAGE ALT TEXT](http://img.youtube.com/vi/0fmgQAftFPY/0.jpg)](http://www.youtube.com/watch?v=0fmgQAftFPY "ROS Autonomous Navigation stack on RC car")
 
