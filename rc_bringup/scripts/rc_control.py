@@ -10,7 +10,7 @@ import time
 import numpy as np
 
 import rospy
-from geometry_msgs.msg import Twist, Vector3
+from geometry_msgs.msg import Twist
 from rc_bringup.msg import CarPwmContol
 
 # init params
