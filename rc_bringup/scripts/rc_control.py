@@ -86,8 +86,8 @@ def set_rc_remote(use_pwm = False):
         servo_val = valmap(vel_msg.angular.z, 1, -1, 1000+offset, 2000+offset)
         pi.set_servo_pulsewidth(servo_pin, servo_val)
         # send motor
-	if(intercept_remote and (0.0 <vel_msg.linear.x < 0.9):
-		break
+        if(intercept_remote and 0.0 < vel_msg.linear.x < 0.9):
+            return
         motor_val = valmap(vel_msg.linear.x, -1.0/motor_power, 1.0/motor_power, 1050, 2050)
         pi.set_servo_pulsewidth(motor_pin, motor_val)
 
@@ -145,7 +145,7 @@ if __name__ == "__main__":
                 if(time_clb > 1.0):     # if something is wrong to close pwm
                     vel_msg = Twist()
                     set_rc_remote()
-	        motor.stop()
+	            motor.stop()
                 print("error")
             rate.sleep()
 
