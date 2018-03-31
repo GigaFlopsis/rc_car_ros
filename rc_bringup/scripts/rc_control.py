@@ -26,7 +26,7 @@ motor_power = 0.2 # limit the power of the motor (1.0 max)
 cmd_vel_topic = "rc_car/cmd_vel" # output topic
 pwm_topic = "rc_car/pwm"
 
-intercept_remote = False
+intercept_remote = True
 
 pi = pigpio.pi()
 pi.set_servo_pulsewidth(servo_pin, middle_servo) # middle servo angle
@@ -86,8 +86,10 @@ def set_rc_remote(use_pwm = False):
         servo_val = valmap(vel_msg.angular.z, 1, -1, 1000+offset, 2000+offset)
         pi.set_servo_pulsewidth(servo_pin, servo_val)
         # send motor
-        if(intercept_remote and 0.0 < vel_msg.linear.x < 0.9):
-            return
+        if(intercept_remote and 0.0 <= vel_msg.linear.x < 0.9):
+           print("return")
+	   return
+	print("test 1")
         motor_val = valmap(vel_msg.linear.x, -1.0/motor_power, 1.0/motor_power, 1050, 2050)
         pi.set_servo_pulsewidth(motor_pin, motor_val)
 
