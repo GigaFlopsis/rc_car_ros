@@ -43,8 +43,8 @@ linear:
 &emsp;&emsp;*The vel topic of subscribed.<br/>*
 ~pwm_topic (string, default: "rc_car/pwm")<br/>
 &emsp;&emsp;*The pwm topic of subscribed.<br/>*
-~motor_power (float, default: "0.2")<br/>
-&emsp;&emsp;*The maximum power that is fed to the motor.<br/>*
+~max_vel (float, default: "1.0")<br/>
+&emsp;&emsp;*The maximum speed at which the car moves (This is a relative parameter that is configurable by trial).<br/>*
 ~servo_pin (int, default:"4")<br/>
 &emsp;&emsp;*The pin out of servo PWM<br/>*
 ~middle_servo (int, default:"1500")<br/>

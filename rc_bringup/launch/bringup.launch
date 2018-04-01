@@ -8,7 +8,7 @@
 	<!--remote controll -->	
 	<node pkg="rc_bringup" name="rc_node" type="rc_control.py" respawn="true" output="screen">
 	<param name="cmd_vel" value="rc_car/cmd_vel"/>
-	<param name="motor_power" value="0.2"/>	
+	<param name="max_vel" value="1.0"/>
 	<param name="servo_pin" value="4"/>
 	<param name="middle_servo" value="1500"/>
 	<param name="servo_offset" value="47"/>    

@@ -22,7 +22,7 @@ middle_servo = 1500
 middle_motor = 1550
 offset = 47.0 # offset of servo
 
-motor_power = 0.2 # limit the power of the motor (1.0 max)
+max_vel = 1.0 # max speed if car
 cmd_vel_topic = "rc_car/cmd_vel" # output topic
 pwm_topic = "rc_car/pwm"
 
@@ -51,10 +51,10 @@ def vel_clb(data):
     :type data: Twist
 
     """
-    global  vel_msg, time_clb
+    global  vel_msg, time_clb, max_vel
     vel_msg = data
     vel_msg.angular.x = np.clip(vel_msg.angular.z, -1.0, 1.0)
-    vel_msg.linear.x = np.clip(vel_msg.linear.x-vel_msg.linear.y, -1.0, 1.0)
+    vel_msg.linear.x = np.clip(vel_msg.linear.x-vel_msg.linear.y, -max_vel, max_vel)
     set_rc_remote()
     time_clb = 0.0
 
@@ -75,22 +75,21 @@ def set_rc_remote(use_pwm = False):
     Recalculation velocity data to pulse and set to PWM servo and motor
     :return:
     """
-    global vel_msg, motor_power, pwm_msg, intercept_remote
+    global vel_msg, pwm_msg, intercept_remote
     if use_pwm:
-	if(pwm_msg.ServoPWM > 0):
-	        pi.set_servo_pulsewidth(servo_pin, pwm_msg.ServoPWM)
-	if(pwm_msg.MotorPWM > 0):
-		pi.set_servo_pulsewidth(motor_pin, pwm_msg.MotorPWM)
+        if(pwm_msg.ServoPWM > 0):
+                pi.set_servo_pulsewidth(servo_pin, pwm_msg.ServoPWM)
+        if(pwm_msg.MotorPWM > 0):
+            pi.set_servo_pulsewidth(motor_pin, pwm_msg.MotorPWM)
     else:
         # send servo
         servo_val = valmap(vel_msg.angular.z, 1, -1, 1000+offset, 2000+offset)
         pi.set_servo_pulsewidth(servo_pin, servo_val)
         # send motor
-        if(intercept_remote and 0.0 <= vel_msg.linear.x < 0.9):
+        if(intercept_remote and 0.0 <= vel_msg.linear.x < 0.1):
            print("return")
-	   return
-	print("test 1")
-        motor_val = valmap(vel_msg.linear.x, -1.0/motor_power, 1.0/motor_power, 1050, 2050)
+           return
+        motor_val = valmap(vel_msg.linear.x, -2.4, 2.4, 1400, 1700)
         pi.set_servo_pulsewidth(motor_pin, motor_val)
 
 def valmap(value, istart, istop, ostart, ostop):
@@ -122,7 +121,7 @@ if __name__ == "__main__":
         offset = rospy.get_param(name_node + '/servo_offset', offset)
         motor_pin = rospy.get_param(name_node + '/motor_pin', motor_pin)
         middle_motor = rospy.get_param(name_node + '/middle_motor', middle_motor)
-        motor_power = rospy.get_param(name_node + '/motor_power', motor_power)
+        max_vel = rospy.get_param(name_node + '/max_vel', max_vel)
 
         rospy.Subscriber(cmd_vel_topic, Twist, vel_clb)
         rospy.Subscriber(pwm_topic, CarPwmContol, vel_clb_pwm)
@@ -147,7 +146,6 @@ if __name__ == "__main__":
                 if(time_clb > 1.0):     # if something is wrong to close pwm
                     vel_msg = Twist()
                     set_rc_remote()
-	            motor.stop()
                 print("error")
             rate.sleep()
 
