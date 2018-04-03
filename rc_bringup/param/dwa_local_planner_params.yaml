@@ -7,6 +7,8 @@ DWAPlannerROS:
   max_vel_y: 0.0  # diff drive robot
   min_vel_y: 0.0  # diff drive robot
 
+  backup_vel: -1.5
+  escape_vel: -0.8
   max_trans_vel: 1.0 # choose slightly less than the base's capability
   min_trans_vel: 0.7  # this is the min trans velocity when there is negligible rotational velocity
   trans_stopped_vel: 0.7
@@ -54,4 +56,3 @@ DWAPlannerROS:
 
   # Differential-drive robot configuration - necessary?
   holonomic_robot: false
-holonomic_robot: false
