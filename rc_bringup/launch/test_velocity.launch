@@ -25,7 +25,7 @@
 	<!--tf to vel -->	
 	<node pkg="rc_bringup" name="rc_vel_node" type="tf_to_vel.py" respawn="true" output="screen">
 	<param name="vel_topic" value="rc_car/velocity"/>
-	<param name="base_link" value="map"/>
+	<param name="base_link" value="odom"/>
 	<param name="child_link" value="base_link"/>
 	</node>
 

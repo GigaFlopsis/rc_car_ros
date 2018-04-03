@@ -26,7 +26,7 @@ max_vel = 1.0 # max speed if car
 cmd_vel_topic = "rc_car/cmd_vel" # output topic
 pwm_topic = "rc_car/pwm"
 
-intercept_remote = True
+intercept_remote = False
 
 pi = pigpio.pi()
 pi.set_servo_pulsewidth(servo_pin, middle_servo) # middle servo angle
@@ -134,7 +134,7 @@ if __name__ == "__main__":
                "servo_offset: %d \n"
                "motor_pin: %d \n"
                "middle_motor: %d \n"
-               "motor_power: %f \n" % (cmd_vel_topic, pwm_topic,servo_pin,middle_servo,offset,motor_pin,middle_motor,motor_power))
+               "max_vel: %f \n" % (cmd_vel_topic, pwm_topic,servo_pin,middle_servo,offset,motor_pin,middle_motor,max_vel))
         while not rospy.is_shutdown():
             try:
                 time_clb += 0.2
