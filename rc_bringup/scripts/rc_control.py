@@ -21,6 +21,8 @@ motor_pin = 17 # inut pin of motor
 middle_servo = 1500
 middle_motor = 1550
 offset = 47.0 # offset of servo
+revers_servo = False # recers of servo direction
+revers_val = 1
 
 max_vel = 1.0 # max speed if car
 cmd_vel_topic = "rc_car/cmd_vel" # output topic
@@ -75,7 +77,7 @@ def set_rc_remote(use_pwm = False):
     Recalculation velocity data to pulse and set to PWM servo and motor
     :return:
     """
-    global vel_msg, pwm_msg, intercept_remote
+    global vel_msg, pwm_msg, intercept_remote, revers_val
     if use_pwm:
         if(pwm_msg.ServoPWM > 0):
                 pi.set_servo_pulsewidth(servo_pin, pwm_msg.ServoPWM)
@@ -83,7 +85,7 @@ def set_rc_remote(use_pwm = False):
             pi.set_servo_pulsewidth(motor_pin, pwm_msg.MotorPWM)
     else:
         # send servo
-        servo_val = valmap(vel_msg.angular.z, 1, -1, 1000+offset, 2000+offset)
+        servo_val = valmap(vel_msg.angular.z, 1*revers_val, -1*revers_val, 1000+offset, 2000+offset)
         pi.set_servo_pulsewidth(servo_pin, servo_val)
         # send motor
         if(intercept_remote and 0.0 <= vel_msg.linear.x < 0.1):
@@ -122,9 +124,17 @@ if __name__ == "__main__":
         motor_pin = rospy.get_param(name_node + '/motor_pin', motor_pin)
         middle_motor = rospy.get_param(name_node + '/middle_motor', middle_motor)
         max_vel = rospy.get_param(name_node + '/max_vel', max_vel)
-
+        revers_servo = rospy.get_param(name_node + '/revers_servo', revers_servo)
+		
+        if(revers_servo == True):
+				revers_val = -1
+        else:
+				revers_val = 1
+		
         rospy.Subscriber(cmd_vel_topic, Twist, vel_clb)
         rospy.Subscriber(pwm_topic, CarPwmContol, vel_clb_pwm)
+
+		
 
         print ("RC_control params: \n"
                "cmd_vel_topic: %s \n"
@@ -134,7 +144,8 @@ if __name__ == "__main__":
                "servo_offset: %d \n"
                "motor_pin: %d \n"
                "middle_motor: %d \n"
-               "max_vel: %f \n" % (cmd_vel_topic, pwm_topic,servo_pin,middle_servo,offset,motor_pin,middle_motor,max_vel))
+               "max_vel: %f \n"
+               "revers servo: %f \n" % (cmd_vel_topic, pwm_topic,servo_pin,middle_servo,offset,motor_pin,middle_motor,max_vel,revers_servo))
         while not rospy.is_shutdown():
             try:
                 time_clb += 0.2

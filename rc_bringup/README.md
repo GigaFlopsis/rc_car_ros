@@ -55,6 +55,8 @@ linear:
 &emsp;&emsp;*The pin out of motor PWM<br/>*
 ~middle_motor (int, default:"1550")<br/>
 &emsp;&emsp;*Zero position of motor<br/>*
+~revers_servo (bool, default:"False")<br/>
+&emsp;&emsp;*Rivers of servo direction<br/>*
 
 
 ### 2. tf_to_vel.py<br/>

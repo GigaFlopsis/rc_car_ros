@@ -12,6 +12,7 @@
 	<param name="servo_offset" value="47"/>    
 	<param name="motor_pin" value="17"/>
 	<param name="middle_motor" value="1550"/>
+	<param name="revers_servo" value="False"/>
 </node>
 	<!-- Rplidar -->
 	<include file="$(find rc_bringup)/launch/rplidar.launch"/>

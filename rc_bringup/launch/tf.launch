@@ -12,11 +12,11 @@
 
 	<!-- base_footprint to base_link -->
 	<node pkg="tf" type="static_transform_publisher" name="base_footprint_to_base_link" 
-	      args="0 0 0.1 0 0 0 base_footprint base_link 10"/>
+	      args="0 0 0.09 0 0 0 base_footprint base_link 10"/>
 
 	<!-- base_link to base_laser -->  	
 	<node pkg="tf" type="static_transform_publisher" name="base_link_to_laser_link" 
-	      args="0.08 0 0.075 0 0 1.0 0 base_link laser 10" />
+	      args="0.08 0 0.07 0 0 1.0 0 base_link laser 10" />
 
 	<!-- scanmatcher_frame to base_bootprint -->  	
 	<!-- node pkg="tf" type="static_transform_publisher" name="scanmatcher_frame_to_base_footprint" 
