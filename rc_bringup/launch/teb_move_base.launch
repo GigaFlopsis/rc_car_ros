@@ -1,0 +1,50 @@
+<!-- 
+    ROS navigation stack with velocity smoother and safety (reactive) controller
+-->
+<launch>
+
+  <arg name="odom_frame_id"   default="odom"/>
+  <arg name="base_frame_id"   default="base_footprint"/>
+  <arg name="global_frame_id" default="map"/>
+  <arg name="odom_topic" default="odom" />
+  <arg name="laser_topic" default="scan" />
+  <arg name="custom_param_file" default="$(find rc_bringup)/param/dummy.yaml"/>
+
+  <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
+
+	<rosparam file="$(arg custom_param_file)" command="load" />
+
+
+	<rosparam file="$(find rc_bringup)/param/costmap_common_params.yaml" command="load" ns="local_costmap" />
+	<rosparam file="$(find rc_bringup)/param/costmap_common_params.yaml" command="load" ns="global_costmap" />
+
+	<rosparam file="$(find rc_bringup)/param/local_costmap_params.yaml" command="load" />
+	<rosparam file="$(find rc_bringup)/param/global_costmap_params.yaml" command="load" />
+	<rosparam file="$(find rc_bringup)/param/teb_local_planner_params.yaml" command="load" />
+
+	<rosparam file="$(find rc_bringup)/param/move_base_params.yaml" command="load" />
+	<rosparam file="$(find rc_bringup)/param/global_planner_params.yaml" command="load" />
+	<rosparam file="$(find rc_bringup)/param/navfn_global_planner_params.yaml" command="load" />
+
+	<param name="global_costmap/global_frame" value="$(arg global_frame_id)"/>
+	<param name="global_costmap/robot_base_frame" value="$(arg base_frame_id)"/>
+	<param name="local_costmap/global_frame" value="$(arg odom_frame_id)"/>
+	<param name="local_costmap/robot_base_frame" value="$(arg base_frame_id)"/>
+
+	<param name="base_global_planner" value="global_planner/GlobalPlanner" />
+	<param name="planner_frequency" value="1.0" />
+	<param name="planner_patience" value="5.0" />
+
+	<param name="base_local_planner" value="teb_local_planner/TebLocalPlannerROS" />
+	<param name="controller_frequency" value="5.0" />
+	<param name="controller_patience" value="15.0" />
+
+	<param name="clearing_rotation_allowed" value="false" /> <!-- Our carlike robot is not able to rotate in place -->
+
+	<remap from="cmd_vel" to="cmd_vel"/>
+	<remap from="odom" to="$(arg odom_topic)"/>
+	<remap from="scan" to="$(arg laser_topic)"/>
+  </node>
+
+</launch>
+
