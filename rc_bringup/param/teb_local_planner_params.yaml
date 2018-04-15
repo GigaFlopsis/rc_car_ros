@@ -15,11 +15,11 @@ TebLocalPlannerROS:
  # Robot
          
  max_vel_x: 1.5
- max_vel_x_backwards: 1.0
+ max_vel_x_backwards: 1.2
  max_vel_y: 0.0
  max_vel_theta: 0.43 # the angular velocity is also bounded by min_turning_radius in case of a carlike robot (r = v / omega)
- acc_lim_x: 0.5
- acc_lim_theta: 0.5
+ acc_lim_x: 5.0
+ acc_lim_theta: 0..8
 
  # ********************** Carlike robot parameters ********************
  min_turning_radius: 0.75        # Min turning radius of the carlike robot (compute value using a model or adjust with rqt_reconfigure manually)
@@ -29,7 +29,7 @@ TebLocalPlannerROS:
 
  footprint_model: # types: "point", "circular", "two_circles", "line", "polygon"
    type: "line"
-   radius: 0.2 # for type "circular"
+   radius: 0.3 # for type "circular"
    line_start: [0.0, 0.0] # for type "line"
    line_end: [0.4, 0.0] # for type "line"
    front_offset: 0.2 # for type "two_circles"
@@ -41,7 +41,7 @@ TebLocalPlannerROS:
  # GoalTolerance
     
  xy_goal_tolerance: 0.2
- yaw_goal_tolerance: 0.1
+ yaw_goal_tolerance: 0.2
  free_goal_vel: False
     
  # Obstacles

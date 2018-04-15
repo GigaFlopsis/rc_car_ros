@@ -78,12 +78,12 @@ def vel_clb(data):
     :type data: Twist
 
     """
-    global vel_msg, time_clb, max_vel
+    global vel_msg, time_clb, max_vel, min_vel
     vel_msg = data
     vel_msg.linear.x = np.clip(vel_msg.linear.x-vel_msg.linear.y, -max_vel, max_vel)
     if vel_msg.linear.x != 0.0:
-        if abs(vel_msg.linear.x) < 0.7:
-            vel_msg.linear.x = 0.7 if vel_msg.linear.x > 0 else -0.7
+        if abs(vel_msg.linear.x) < min_vel:
+            vel_msg.linear.x = min_vel if vel_msg.linear.x > 0 else min_vel
 
 
     set_rc_remote(RemoteMode.vel)

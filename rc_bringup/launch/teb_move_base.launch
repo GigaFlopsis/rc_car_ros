@@ -21,7 +21,6 @@
 	<rosparam file="$(find rc_bringup)/param/local_costmap_params.yaml" command="load" />
 	<rosparam file="$(find rc_bringup)/param/global_costmap_params.yaml" command="load" />
 	<rosparam file="$(find rc_bringup)/param/teb_local_planner_params.yaml" command="load" />
-	<rosparam file="$(find rc_bringup)/param/rc_car_teb_local_planner_params.yaml" command="load" />
 
 	<rosparam file="$(find rc_bringup)/param/move_base_params.yaml" command="load" />
 	<rosparam file="$(find rc_bringup)/param/global_planner_params.yaml" command="load" />
