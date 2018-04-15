@@ -11,6 +11,7 @@ import numpy as np
 import math
 from enum import Enum
 
+
 import rospy
 from geometry_msgs.msg import Twist
 from rc_bringup.msg import CarPwmContol
@@ -32,16 +33,16 @@ middle_servo = 1500
 middle_motor = 1550
 offset = 47.0 # offset of servo
 revers_servo = False # revers of servo direction
-revers_val = 1
+revers_val = 1.0
 
 max_vel = 1.0 # max speed if car
-max_steering_angle = 25 # in degrees
+max_steering_angle = 25.0 # in degrees
 wheelbase = 0.28 # in meters
 
 """Topics for remote car"""
-cmd_vel_topic = "cmd_vel"       # remote via velocity
-pwm_topic = "pwm"               # direct remote PWM
-drive_topic = "ackermann_cmd"   # remote like-car
+cmd_vel_topic = "/cmd_vel"       # remote via velocity
+pwm_topic = "/pwm"               # direct remote PWM
+drive_topic = "/ackermann_cmd"   # remote like-car
 
 intercept_remote = False
 
@@ -59,8 +60,11 @@ time_clb = 0.0
 
 def convert_trans_rot_vel_to_steering_angle(v, omega, wheelbase):
   global max_steering_angle
-  if omega == 0 or v == 0:
+  if omega == 0.0:
     return 0
+  if v == 0.0:
+      return math.degrees(omega)
+
 
   radius = v / omega
   steering_angle = math.degrees(math.atan(wheelbase / radius))
@@ -97,7 +101,7 @@ def vel_clb_drive(data):
        :param data: velocity and  steering value
        :type data: AckermannDriveStamped
        """
-    global drive_msg,time_clb
+    global drive_msg,time_clb, max_vel
     drive_msg = data
     drive_msg.drive.speed = np.clip(drive_msg.drive.speed, -max_vel, max_vel)
     set_rc_remote(RemoteMode.drive)
@@ -121,18 +125,20 @@ def set_rc_remote(mode =  RemoteMode.vel):
         # send servo
         v = vel_msg.linear.x-vel_msg.linear.y
         steering = convert_trans_rot_vel_to_steering_angle(v,vel_msg.angular.z, wheelbase)
-        servo_val = valmap(steering, max_steering_angle*revers_val, max_steering_angle,-1*revers_val, 1000+offset, 2000+offset)
-        pi.set_servo_pulsewidth(servo_pin, servo_val)
-
+	servo_val = valmap(steering, max_steering_angle*revers_val, max_steering_angle*-revers_val, 1000+offset, 2000+offset)
+	try:
+	        pi.set_servo_pulsewidth(servo_pin, servo_val)
+	except:
+		print("error:", servo_val)
         # send motor
         if(intercept_remote and 0.0 <= vel_msg.linear.x < 0.1):
            print("return")
            return
-        motor_val = valmap(vel_msg.linear.x, -2.4, 2.4, 1400, 1700, False)
+        motor_val = valmap(vel_msg.linear.x, -2.4, 2.4, 1400, 1700)
         pi.set_servo_pulsewidth(motor_pin, motor_val)
     elif mode == RemoteMode.drive:
         # send servo
-        servo_val = valmap(drive_msg.drive.steering_angle, max_steering_angle * revers_val, max_steering_angle, -1 * revers_val,
+        servo_val = valmap(math.degrees(drive_msg.drive.steering_angle), max_steering_angle * revers_val, max_steering_angle * -revers_val,
                            1000 + offset, 2000 + offset)
         pi.set_servo_pulsewidth(servo_pin, servo_val)
 
@@ -140,10 +146,13 @@ def set_rc_remote(mode =  RemoteMode.vel):
         if (intercept_remote and 0.0 <= drive_msg.drive.speed < 0.1):
             print("return")
             return
-        motor_val = valmap(drive_msg.drive.speed, -2.4, 2.4, 1400, 1700, False)
+        motor_val = valmap(drive_msg.drive.speed, -2.4, 2.4, 1400, 1700)
         pi.set_servo_pulsewidth(motor_pin, motor_val)
+    else:
+        print("error")
 
-def valmap(value, istart, istop, ostart, ostop, clip_flag = True):
+
+def valmap(value, istart, istop, ostart, ostop):
     """
     Re-maps a number from one range to another.
     That is, a value of istart would get mapped to ostart,
@@ -155,11 +164,12 @@ def valmap(value, istart, istop, ostart, ostop, clip_flag = True):
     :param ostop: the upper bound of the value’s target range
     :return: The mapped value.
     """
-    val = ostart + (ostop - ostart) * ((value - istart) / (istop - istart))
-    if clip_flag:
-        return np.clip(val, ostart, ostop)
-    else:
-        return val
+    try:
+    	val = ostart + (ostop - ostart) * ((value - istart) / (istop - istart))
+    except:
+	print("map error", value, istart, istop, ostart, ostop)
+	val = 0.0
+    return np.clip(val, ostart, ostop)
 
 if __name__ == "__main__":
     try:
