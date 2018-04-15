@@ -221,12 +221,12 @@ if __name__ == "__main__":
                 time_clb += 0.2
                 if(time_clb > 1.0):     # if data does not come to close pwm
                     vel_msg = Twist()
-                    set_rc_remote()
+                    set_rc_remote(RemoteMode.vel)
             except:
                 time_clb += 0.2
                 if(time_clb > 1.0):     # if something is wrong to close pwm
                     vel_msg = Twist()
-                    set_rc_remote()
+                    set_rc_remote(RemoteMode.vel)
                 print("error")
             rate.sleep()
 
