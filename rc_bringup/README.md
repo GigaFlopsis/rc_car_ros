@@ -48,6 +48,8 @@ linear:
 &emsp;&emsp;*The pwm topic of subscribed for direct remote of PWM.<br/>*
 ~max_vel (float, default: "1.0")<br/>
 &emsp;&emsp;*The maximum speed at which the car moves (This is a relative parameter that is configurable by trial).<br/>*
+~min_vel (float, default: "1.0")<br/>
+&emsp;&emsp;*The minimum speed at which the car moves (This is a relative parameter that is configurable by trial).<br/>*
 ~wheelbase (float, default: "0.28")<br/>
 &emsp;&emsp;*The length wheelbase of car in meters.<br/>*
 ~ max_steering_angle (float, default: "25.0")<br/>

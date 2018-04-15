@@ -11,6 +11,7 @@
 	<param name="pwm_topic" value="pwm"/>
 	<param name="drive_topic" value="ackermann_cmd"/>
 	<param name="max_vel" value="2.4"/>
+	<param name="min_vel" value="0.7"/>
 	<param name="wheelbase" value="0.28"/>
 	<param name="max_steering_angle" value="25.0"/>
 	<param name="servo_pin" value="4"/>

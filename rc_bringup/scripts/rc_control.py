@@ -35,7 +35,8 @@ offset = 47.0 # offset of servo
 revers_servo = False # revers of servo direction
 revers_val = 1.0
 
-max_vel = 1.0 # max speed if car
+max_vel = 1.0 # max speed of the car
+min_vel = 0.7 # min speed of the car
 max_steering_angle = 25.0 # in degrees
 wheelbase = 0.28 # in meters
 
@@ -80,6 +81,11 @@ def vel_clb(data):
     global vel_msg, time_clb, max_vel
     vel_msg = data
     vel_msg.linear.x = np.clip(vel_msg.linear.x-vel_msg.linear.y, -max_vel, max_vel)
+    if vel_msg.linear.x != 0.0:
+        if abs(vel_msg.linear.x) < 0.7:
+            vel_msg.linear.x = 0.7 if vel_msg.linear.x > 0 else -0.7
+
+
     set_rc_remote(RemoteMode.vel)
     time_clb = 0.0
 
@@ -187,6 +193,7 @@ if __name__ == "__main__":
         middle_motor = rospy.get_param(name_node + '/middle_motor', middle_motor)
         max_vel = rospy.get_param(name_node + '/max_vel', max_vel)
         revers_servo = rospy.get_param(name_node + '/revers_servo', revers_servo)
+        min_vel = rospy.get_param(name_node + '/min_vel', min_vel)
 
         max_steering_angle = rospy.get_param(name_node + '/max_steering_angle', max_steering_angle)
         wheelbase = rospy.get_param(name_node + '/wheelbase', wheelbase)
@@ -206,6 +213,7 @@ if __name__ == "__main__":
                "pwm_toppic: %s \n"
                "drive_topic: %s \n"
                "max_vel: %f \n"
+               "min_vel: %f \n"
                "max_steering_angle: %f \n"
                "wheelbase: %f \n"
                "servo_pin: %d \n"
@@ -218,6 +226,7 @@ if __name__ == "__main__":
                                         pwm_topic,
                                         drive_topic,
                                         max_vel,
+                                        min_vel,
                                         max_steering_angle,
                                         wheelbase,
                                         servo_pin,
