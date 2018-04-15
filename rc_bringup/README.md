@@ -21,8 +21,9 @@ These methods do not pretend to be original, most of it I borrowed from the proj
 Ideally, you need to adjust the input data so that it matches the actual speed, this can be done by finding the relationship between the speed of the car and the output pulse.<br/>
 
 #### Subscribed Topics:
-rc_car/cmd_vel ([geometry_msgs:Twist](http://docs.ros.org/api/geometry_msgs/html/msg/Twist.html))<br/>
-rc_car/pwm ([rc_bringup:CarPwmContol](https://github.com/GigaFlopsis/rc_car_ros/blob/master/rc_bringup/msg/CarPwmContol.msg))<br/>
+cmd_vel ([geometry_msgs:Twist](http://docs.ros.org/api/geometry_msgs/html/msg/Twist.html))<br/>
+pwm ([rc_bringup:CarPwmContol](https://github.com/GigaFlopsis/rc_car_ros/blob/master/rc_bringup/msg/CarPwmContol.msg))<br/>
+ackermann_cmd ([ackermann_msgs:AckermannDriveStamped](http://docs.ros.org/api/ackermann_msgs/html/msg/AckermannDriveStamped.html))<br/>
 
 where Twist:
 ```
@@ -39,12 +40,18 @@ linear:
 **Output param**: PWM pulse
 
 #### Parameters:
-~cmd_vel (string, default: "rc_car/cmd_vel")<br/>
-&emsp;&emsp;*The vel topic of subscribed.<br/>*
-~pwm_topic (string, default: "rc_car/pwm")<br/>
-&emsp;&emsp;*The pwm topic of subscribed.<br/>*
+~cmd_vel (string, default: "cmd_vel")<br/>
+&emsp;&emsp;*The vel topic of subscribed for remote via velocity.<br/>*
+~drive_topic(string, default: "ackermann_cmd")<br/>
+&emsp;&emsp;*The remote topic of subscribed for remote like-car.<br/>*
+~pwm_topic (string, default: "pwm")<br/>
+&emsp;&emsp;*The pwm topic of subscribed for direct remote of PWM.<br/>*
 ~max_vel (float, default: "1.0")<br/>
 &emsp;&emsp;*The maximum speed at which the car moves (This is a relative parameter that is configurable by trial).<br/>*
+~wheelbase (float, default: "0.28")<br/>
+&emsp;&emsp;*The length wheelbase of car in meters.<br/>*
+~ max_steering_angle (float, default: "25.0")<br/>
+&emsp;&emsp;*The max wheelbase steering angle of car in degrees.<br/>*
 ~servo_pin (int, default:"4")<br/>
 &emsp;&emsp;*The pin out of servo PWM<br/>*
 ~middle_servo (int, default:"1500")<br/>
@@ -66,10 +73,10 @@ linear:
 tf([tf/tfMessage.msg](http://docs.ros.org/api/tf/html/msg/tfMessage.html))<br/>
 
 #### Publisher Topics:
-vel_topic [geometry_msgs:TwistStamped](http://docs.ros.org/api/geometry_msgs/html/msg/TwistStamped.html)<br/>
+velocity [geometry_msgs:TwistStamped](http://docs.ros.org/api/geometry_msgs/html/msg/TwistStamped.html)<br/>
 
 #### Parameters:
-~vel_topic (string, default: "rc_car/velocity")<br/>
+~vel_topic (string, default: "velocity")<br/>
 &emsp;&emsp;*Topic for publication.<br/>*
 ~base_link (string, default: "map")<br/>
 &emsp;&emsp;*The perant tf.<br/>*

@@ -7,8 +7,12 @@
 
 	<!--remote controll -->	
 	<node pkg="rc_bringup" name="rc_node" type="rc_control.py" respawn="true" output="screen">
-	<param name="cmd_vel" value="rc_car/cmd_vel"/>
+	<param name="cmd_vel" value="cmd_vel"/>
+	<param name="pwm_topic" value="pwm"/>
+	<param name="drive_topic" value="ackermann_cmd"/>
 	<param name="max_vel" value="2.4"/>
+	<param name="wheelbase" value="0.28"/>
+	<param name="max_steering_angle" value="25.0"/>
 	<param name="servo_pin" value="4"/>
 	<param name="middle_servo" value="1500"/>
 	<param name="servo_offset" value="47"/>    
@@ -19,7 +23,7 @@
 		
 	<!--tf to vel -->	
 	<node pkg="rc_bringup" name="rc_vel_node" type="tf_to_vel.py" respawn="true" output="screen">
-	<param name="vel_topic" value="rc_car/velocity"/>
+	<param name="vel_topic" value="velocity"/>
 	<param name="base_link" value="map"/>
 	<param name="child_link" value="base_link"/>
 	</node>
@@ -27,8 +31,17 @@
 	<!-- Rplidar -->
 	<include file="$(find rc_bringup)/launch/rplidar.launch"/>
 
-	<!-- Navigation -->
-	<include file="$(find rc_bringup)/launch/navigation.launch"/>
+	<!-- Tf-->
+	<include file="$(find rc_bringup)/launch/tf.launch"/>
+
+	<!-- Amcl-->
+    <include file="$(find rc_bringup)/launch/localizacion.launch"/>
+
+	<!-- Odometry from lidar data-->
+	<include file="$(find rc_bringup)/launch/odom_laser.launch"/>
+
+	<!-- Move base-->
+	<!--include file="$(find rc_bringup)/launch/move_base.launch"/-->
 
 	<!-- Map server -->
 	<node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)" />
