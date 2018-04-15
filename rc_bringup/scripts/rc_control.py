@@ -123,9 +123,9 @@ def set_rc_remote(mode =  RemoteMode.vel):
             pi.set_servo_pulsewidth(motor_pin, pwm_msg.MotorPWM)
     elif mode == RemoteMode.vel:
         # send servo
-        v = vel_msg.linear.x-vel_msg.linear.y
-        steering = convert_trans_rot_vel_to_steering_angle(v,vel_msg.angular.z, wheelbase)
-	servo_val = valmap(steering, max_steering_angle*revers_val, max_steering_angle*-revers_val, 1000+offset, 2000+offset)
+        # v = vel_msg.linear.x-vel_msg.linear.y
+        # steering = convert_trans_rot_vel_to_steering_angle(v,vel_msg.angular.z, wheelbase)
+	servo_val = valmap(math.degrees(vel_msg.angular.z), max_steering_angle*revers_val, max_steering_angle*-revers_val, 1000+offset, 2000+offset)
 	try:
 	        pi.set_servo_pulsewidth(servo_pin, servo_val)
 	except:
