@@ -1,6 +1,6 @@
 <launch>
 
-  <arg name="map_file" default="$(find rc_bringup)/map/home.yaml"/>
+  <arg name="map_file" default="$(find rc_bringup)/map/laba_209.yaml"/>
 
 	<!--gyro -->
 	<!--node name="mpu6050_node" pkg="mpu6050" type="mpu6050_node"/-->
@@ -11,7 +11,7 @@
 	<param name="pwm_topic" value="pwm"/>
 	<param name="drive_topic" value="ackermann_cmd"/>
 	<param name="max_vel" value="2.4"/>
-	<param name="min_vel" value="0.7"/>
+	<param name="min_vel" value="1.0"/>
 	<param name="wheelbase" value="0.28"/>
 	<param name="max_steering_angle" value="25.0"/>
 	<param name="servo_pin" value="4"/>
