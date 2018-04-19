@@ -5,6 +5,7 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /Global Options1
+        - /Local Planner1
         - /Robot1/Robot Footprint1
       Splitter Ratio: 0.605095983
     Tree Height: 688
@@ -77,13 +78,13 @@ Visualization Manager:
           Unreliable: false
           Value: true
         - Class: rviz/Marker
-          Enabled: true
+          Enabled: false
           Marker Topic: /move_base/TebLocalPlannerROS/teb_markers
           Name: TebMarker
           Namespaces:
             {}
           Queue Size: 100
-          Value: true
+          Value: false
         - Alpha: 1
           Buffer Length: 1
           Class: rviz/Path
@@ -286,7 +287,7 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Angle: 0
+      Angle: 0.00499999989
       Class: rviz/TopDownOrtho
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.0599999987
@@ -296,11 +297,11 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.00999999978
-      Scale: 79.6938705
-      Target Frame: base_footprint
+      Scale: 64.3432846
+      Target Frame: map
       Value: TopDownOrtho (rviz)
-      X: 0
-      Y: 0
+      X: -0.604557633
+      Y: 2.27396202
     Saved:
       - Angle: 0
         Class: rviz/TopDownOrtho

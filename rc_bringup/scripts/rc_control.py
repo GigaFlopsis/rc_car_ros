@@ -44,6 +44,7 @@ wheelbase = 0.28 # in meters
 cmd_vel_topic = "/cmd_vel"       # remote via velocity
 pwm_topic = "/pwm"               # direct remote PWM
 drive_topic = "/ackermann_cmd"   # remote like-car
+pwm_output_topic = "/pwm_output"   # remote like-car
 
 intercept_remote = False
 
@@ -54,6 +55,7 @@ pi.set_servo_pulsewidth(motor_pin, middle_motor) # zero speed for motor (differe
 vel_msg = Twist()
 pwm_msg = CarPwmContol()
 drive_msg = AckermannDriveStamped()
+pwm_output_msg = CarPwmContol()
 
 rate = 5
 time_clb = 0.0
@@ -120,45 +122,51 @@ def set_rc_remote(mode =  RemoteMode.vel):
     """
     global vel_msg, pwm_msg, \
         intercept_remote, revers_val, \
-        max_steering_angle, wheelbase, drive_msg
+        max_steering_angle, wheelbase, drive_msg, pwm_output_msg
 
     if mode == RemoteMode.pwm:
+        pwm_output_msg = pwm_msg
         if(pwm_msg.ServoPWM > 0):
                 pi.set_servo_pulsewidth(servo_pin, pwm_msg.ServoPWM)
         if(pwm_msg.MotorPWM > 0):
             pi.set_servo_pulsewidth(motor_pin, pwm_msg.MotorPWM)
     elif mode == RemoteMode.vel:
-        # send servo
-        # v = vel_msg.linear.x-vel_msg.linear.y
-        # steering = convert_trans_rot_vel_to_steering_angle(v,vel_msg.angular.z, wheelbase)
-	servo_val = valmap(math.degrees(vel_msg.angular.z), max_steering_angle*revers_val, max_steering_angle*-revers_val, 1000+offset, 2000+offset)
-	try:
-	        pi.set_servo_pulsewidth(servo_pin, servo_val)
-	except:
-		print("error:", servo_val)
-        # send motor
+            # send servo
+            # v = vel_msg.linear.x-vel_msg.linear.y
+            # steering = convert_trans_rot_vel_to_steering_angle(v,vel_msg.angular.z, wheelbase)
+        servo_val = valmap(math.degrees(vel_msg.angular.z), max_steering_angle*revers_val, max_steering_angle*-revers_val, 1000+offset, 2000+offset)
+        pwm_output_msg.ServoPWM = servo_val
+        try:
+                pi.set_servo_pulsewidth(servo_pin, servo_val)
+        except:
+            print("error:", servo_val)
+            # send motor
         if(intercept_remote and 0.0 <= vel_msg.linear.x < 0.1):
            print("return")
            return
-        motor_val = valmap(vel_msg.linear.x, -2.4, 2.4, 1400, 1700)
+        motor_val = valmap(vel_msg.linear.x, -2.4, 2.4, 1400, 1700, False)
         pi.set_servo_pulsewidth(motor_pin, motor_val)
-    elif mode == RemoteMode.drive:
-        # send servo
-        servo_val = valmap(math.degrees(drive_msg.drive.steering_angle), max_steering_angle * revers_val, max_steering_angle * -revers_val,
-                           1000 + offset, 2000 + offset)
-        pi.set_servo_pulsewidth(servo_pin, servo_val)
+        pwm_output_msg.MotorPWM = motor_val
 
-        # send motor
-        if (intercept_remote and 0.0 <= drive_msg.drive.speed < 0.1):
-            print("return")
-            return
-        motor_val = valmap(drive_msg.drive.speed, -2.4, 2.4, 1400, 1700)
-        pi.set_servo_pulsewidth(motor_pin, motor_val)
+    elif mode == RemoteMode.drive:
+            # send servo
+            servo_val = valmap(math.degrees(drive_msg.drive.steering_angle), max_steering_angle * revers_val, max_steering_angle * -revers_val,
+                               1000 + offset, 2000 + offset)
+            pi.set_servo_pulsewidth(servo_pin, servo_val)
+
+            # send motor
+            if (intercept_remote and 0.0 <= drive_msg.drive.speed < 0.1):
+                print("return")
+                return
+            motor_val = valmap(drive_msg.drive.speed, -2.4, 2.4, 1400, 1700, False)
+            pi.set_servo_pulsewidth(motor_pin, motor_val)
+            pwm_output_msg.ServoPWM = servo_val
+            pwm_output_msg.MotorPWM = motor_val
     else:
         print("error")
+    pwm_pub(pwm_output_msg)
 
-
-def valmap(value, istart, istop, ostart, ostop):
+def valmap(value, istart, istop, ostart, ostop, clip_flag = True):
     """
     Re-maps a number from one range to another.
     That is, a value of istart would get mapped to ostart,
@@ -173,9 +181,12 @@ def valmap(value, istart, istop, ostart, ostop):
     try:
     	val = ostart + (ostop - ostart) * ((value - istart) / (istop - istart))
     except:
-	print("map error", value, istart, istop, ostart, ostop)
-	val = 0.0
-    return np.clip(val, ostart, ostop)
+        print("map error", value, istart, istop, ostart, ostop)
+        val = 0.0
+    if clip_flag:
+        return np.clip(val, ostart, ostop)
+    else:
+        return val
 
 if __name__ == "__main__":
     try:
@@ -187,6 +198,7 @@ if __name__ == "__main__":
         cmd_vel_topic = rospy.get_param(name_node + '/cmd_vel', cmd_vel_topic)
         pwm_topic = rospy.get_param(name_node + '/pwm_topic', pwm_topic)
         servo_pin = rospy.get_param(name_node + '/servo_pin', servo_pin)
+        pwm_output_topic = rospy.get_param(name_node + '/pwm_output_topic', pwm_output_topic)
         middle_servo = rospy.get_param(name_node + '/middle_servo', middle_servo)
         offset = rospy.get_param(name_node + '/servo_offset', offset)
         motor_pin = rospy.get_param(name_node + '/motor_pin', motor_pin)
@@ -194,24 +206,25 @@ if __name__ == "__main__":
         max_vel = rospy.get_param(name_node + '/max_vel', max_vel)
         revers_servo = rospy.get_param(name_node + '/revers_servo', revers_servo)
         min_vel = rospy.get_param(name_node + '/min_vel', min_vel)
-
         max_steering_angle = rospy.get_param(name_node + '/max_steering_angle', max_steering_angle)
         wheelbase = rospy.get_param(name_node + '/wheelbase', wheelbase)
         drive_topic = rospy.get_param(name_node + '/drive_topic', drive_topic)
 
-        if(revers_servo == True):
-				revers_val = -1
+        if revers_servo:
+            revers_val = -1.0
         else:
-				revers_val = 1
-		
+            revers_val = 1.0
+
         rospy.Subscriber(cmd_vel_topic, Twist, vel_clb)
         rospy.Subscriber(pwm_topic, CarPwmContol, vel_clb_pwm)
         rospy.Subscriber(drive_topic, AckermannDriveStamped, vel_clb_drive)
+        pwm_pub = rospy.Publisher(pwm_output_msg, CarPwmContol, queue_size=10)
 
         print ("RC_control params: \n"
                "cmd_vel_topic: %s \n"
                "pwm_toppic: %s \n"
                "drive_topic: %s \n"
+               "pwm_output_topic: %s \n"
                "max_vel: %f \n"
                "min_vel: %f \n"
                "max_steering_angle: %f \n"
@@ -225,6 +238,7 @@ if __name__ == "__main__":
                "===================\n" % (cmd_vel_topic,
                                         pwm_topic,
                                         drive_topic,
+                                        pwm_output_topic,
                                         max_vel,
                                         min_vel,
                                         max_steering_angle,
