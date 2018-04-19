@@ -20,8 +20,8 @@ pwm.MotorPWM = 1550
 vel = TwistStamped()
 vel_norm = float()
 
-cmd_vel_topic = "/rc_car/velocity" # output topic
-pwm_topic = "rc_car/pwm"
+cmd_vel_topic = "velocity" # output topic
+pwm_topic = "pwm"
 
 class PwmThread(Thread):
     """
