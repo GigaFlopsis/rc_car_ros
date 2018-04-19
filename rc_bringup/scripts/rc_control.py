@@ -164,7 +164,7 @@ def set_rc_remote(mode =  RemoteMode.vel):
             pwm_output_msg.MotorPWM = motor_val
     else:
         print("error")
-    pwm_pub(pwm_output_msg)
+    pwm_pub.publish(pwm_output_msg)
 
 def valmap(value, istart, istop, ostart, ostop, clip_flag = True):
     """
@@ -218,7 +218,7 @@ if __name__ == "__main__":
         rospy.Subscriber(cmd_vel_topic, Twist, vel_clb)
         rospy.Subscriber(pwm_topic, CarPwmContol, vel_clb_pwm)
         rospy.Subscriber(drive_topic, AckermannDriveStamped, vel_clb_drive)
-        pwm_pub = rospy.Publisher(pwm_output_msg, CarPwmContol, queue_size=10)
+        pwm_pub = rospy.Publisher(pwm_output_topic, CarPwmContol, queue_size=10)
 
         print ("RC_control params: \n"
                "cmd_vel_topic: %s \n"
