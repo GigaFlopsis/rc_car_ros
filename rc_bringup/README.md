@@ -46,6 +46,8 @@ linear:
 &emsp;&emsp;*The remote topic of subscribed for remote like-car.<br/>*
 ~pwm_topic (string, default: "pwm")<br/>
 &emsp;&emsp;*The pwm topic of subscribed for direct remote of PWM.<br/>*
+~pwm_output_topic (string, default: "pwm_output")<br/>
+&emsp;&emsp;*The topic publishes a signal on the motors.<br/>*
 ~max_vel (float, default: "1.0")<br/>
 &emsp;&emsp;*The maximum speed at which the car moves (This is a relative parameter that is configurable by trial).<br/>*
 ~min_vel (float, default: "1.0")<br/>

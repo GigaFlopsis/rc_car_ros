@@ -1,14 +1,14 @@
 !!python/object/new:dynamic_reconfigure.encoding.Config
 dictitems:
-  acc_lim_theta: 0.7
-  acc_lim_x: 1.0
-  acc_lim_y: 0.1
+  acc_lim_theta: 0.8
+  acc_lim_x: 3.0
+  acc_lim_y: 0.5
   allow_init_with_backwards_motion: true
   cmd_angle_instead_rotvel: true
   costmap_obstacles_behind_robot_dist: 1.0
   dt_hysteresis: 0.1
   dt_ref: 0.3
-  dynamic_obstacle_inflation_dist: 0.6
+  dynamic_obstacle_inflation_dist: 0.75
   enable_multithreading: true
   exact_arc_length: false
   feasibility_check_no_poses: 2
@@ -18,15 +18,15 @@ dictitems:
   global_plan_viapoint_sep: -0.1
   groups: !!python/object/new:dynamic_reconfigure.encoding.Config
     dictitems:
-      acc_lim_theta: 0.7
-      acc_lim_x: 1.0
-      acc_lim_y: 0.1
+      acc_lim_theta: 0.8
+      acc_lim_x: 3.0
+      acc_lim_y: 0.5
       allow_init_with_backwards_motion: true
       cmd_angle_instead_rotvel: true
       costmap_obstacles_behind_robot_dist: 1.0
       dt_hysteresis: 0.1
       dt_ref: 0.3
-      dynamic_obstacle_inflation_dist: 0.6
+      dynamic_obstacle_inflation_dist: 0.75
       enable_multithreading: true
       exact_arc_length: false
       feasibility_check_no_poses: 2
@@ -47,11 +47,11 @@ dictitems:
       max_global_plan_lookahead_dist: 3.0
       max_number_classes: 4
       max_vel_theta: 0.4
-      max_vel_x: 1.5
-      max_vel_x_backwards: 0.9
+      max_vel_x: 2.5
+      max_vel_x_backwards: 2.2
       max_vel_y: 0.0
       min_obstacle_dist: 0.3
-      min_turning_radius: 0.5
+      min_turning_radius: 0.8
       name: Default
       no_inner_iterations: 5
       no_outer_iterations: 4
@@ -100,8 +100,8 @@ dictitems:
       weight_optimaltime: 1.0
       weight_viapoint: 1.0
       wheelbase: 0.28
-      xy_goal_tolerance: 0.3
-      yaw_goal_tolerance: 0.3
+      xy_goal_tolerance: 0.2
+      yaw_goal_tolerance: 1.6
     state: []
   h_signature_prescaler: 0.5
   h_signature_threshold: 0.1
@@ -113,11 +113,11 @@ dictitems:
   max_global_plan_lookahead_dist: 3.0
   max_number_classes: 4
   max_vel_theta: 0.4
-  max_vel_x: 1.5
-  max_vel_x_backwards: 0.9
+  max_vel_x: 2.5
+  max_vel_x_backwards: 2.2
   max_vel_y: 0.0
   min_obstacle_dist: 0.3
-  min_turning_radius: 0.5
+  min_turning_radius: 0.8
   no_inner_iterations: 5
   no_outer_iterations: 4
   obstacle_association_cutoff_factor: 5.0
@@ -160,6 +160,6 @@ dictitems:
   weight_optimaltime: 1.0
   weight_viapoint: 1.0
   wheelbase: 0.28
-  xy_goal_tolerance: 0.3
-  yaw_goal_tolerance: 0.3
+  xy_goal_tolerance: 0.2
+  yaw_goal_tolerance: 1.6
 state: []
