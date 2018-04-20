@@ -12,6 +12,13 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
   message_generation
+  dynamic_reconfigure
+)
+
+## Generate dynamic reconfigure parameters in the 'cfg' folder
+ generate_dynamic_reconfigure_options(
+
+    cfg/pose_controller.cfg
 )
 
 ## Declare ROS messages and services
@@ -97,11 +104,6 @@ include_directories(include ${catkin_INCLUDE_DIRS})
 ##   * uncomment the "generate_dynamic_reconfigure_options" section below
 ##     and list every .cfg file to be processed
 
-## Generate dynamic reconfigure parameters in the 'cfg' folder
-# generate_dynamic_reconfigure_options(
-#   cfg/DynReconf1.cfg
-#   cfg/DynReconf2.cfg
-# )
 
 ###################################
 ## catkin specific configuration ##
@@ -118,6 +120,7 @@ catkin_package(
 #  CATKIN_DEPENDS roscpp rospy
 #  DEPENDS system_lib
 )
+
 
 ###########
 ## Build ##
