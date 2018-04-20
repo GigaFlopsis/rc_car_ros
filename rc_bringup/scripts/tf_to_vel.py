@@ -10,8 +10,8 @@ from geometry_msgs.msg import TwistStamped, Twist
 
 import copy
 
-vel_topic = "/rc_car/velocity"
-base_link = "map"
+vel_topic = "velocity"
+base_link = "odom"
 child_link = "base_link"
 
 prev_pose = list()
@@ -53,7 +53,7 @@ if __name__ == '__main__':
                 velocity.header = rospy.Header()
                 velocity.twist.linear.x = (current_pos[0]-prev_pose[0]) / dt
                 velocity.twist.linear.y = (current_pos[1]-prev_pose[1]) / dt
-                velocity.twist.linear.z = (current_pos[2]-prev_pose[2]) / dt
+                velocity.twist.linear.z = 0.0 #(current_pos[2]-prev_pose[2]) / dt
             except ZeroDivisionError:
                 pass
             prev_pose = copy.deepcopy(current_pos)

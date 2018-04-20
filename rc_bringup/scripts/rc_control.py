@@ -30,7 +30,7 @@ servo_pin = 4 # inut pin of servo
 motor_pin = 17 # inut pin of motor
 
 middle_servo = 1500
-middle_motor = 1550
+middle_motor = 1500
 offset = 47.0 # offset of servo
 revers_servo = False # revers of servo direction
 revers_val = 1.0
