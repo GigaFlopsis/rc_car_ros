@@ -54,7 +54,7 @@ cmd_vel_topic = "cmd_vel" # output topic
 vel_topic = "velocity"
 goal_topic = "move_base_simple/goal"
 #tf
-base_link = "odom"
+base_link = "map"
 child_link = "base_link"
 
 # geometry methods
@@ -121,11 +121,10 @@ def get_control():
     global velocity, cmd_vel_msg, error_dist, error_course, pid_pose, pid_course, finish_flag, goal_tolerance
 
     setPIDk()
-    if (abs(error_course) > math.radians(70)):
+    if (abs(error_course) > math.radians(80)):
          error_dist = -error_dist
          error_course = -error_course
-         print("error_course > 90:", abs(math.degrees(error_course)))
-
+    
     pid_pose.update(error_dist)
     cmd_vel_msg.linear.x = -pid_pose.output
 
