@@ -1,0 +1,33 @@
+!!python/object/new:dynamic_reconfigure.encoding.Config
+dictitems:
+  groups: !!python/object/new:dynamic_reconfigure.encoding.Config
+    dictitems:
+      groups: !!python/object/new:dynamic_reconfigure.encoding.Config
+        state: []
+      id: 0
+      kD_course: 0.2
+      kD_pose: 0.2
+      kI_course: 0.0
+      kI_pose: 0.0
+      kP_course: 0.5
+      kP_pose: 1.0
+      max_angle: 25.0
+      max_vel: 1.0
+      min_vel: -1.5
+      name: Default
+      parameters: !!python/object/new:dynamic_reconfigure.encoding.Config
+        state: []
+      parent: 0
+      state: true
+      type: ''
+    state: []
+  kD_course: 0.2
+  kD_pose: 0.2
+  kI_course: 0.0
+  kI_pose: 0.0
+  kP_course: 0.5
+  kP_pose: 1.0
+  max_angle: 25.0
+  max_vel: 1.0
+  min_vel: -1.5
+state: []

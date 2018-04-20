@@ -23,8 +23,8 @@ current_course = float()
 goal_pose = Pose()
 
 init_flag = False
-max_vel = 2.0 # m/s
-min_vel = 0.0 # m/s
+max_vel = 1.1 # m/s
+min_vel = -1.5 # m/s
 max_angle = math.radians(25)
 
 #PID
@@ -34,13 +34,16 @@ pid_course = PID()
 pid_pose.setWindup(max_vel)
 pid_course.setWindup(max_angle)
 
-kP_pose = 0.0
+goal_tolerance = 0.4
+finish_flag = True
+
+kP_pose = 1.0
 kI_pose = 0.0
-kD_pose = 0.0
+kD_pose = 0.2
 
 kP_course = 0.5
 kI_course = 0.0
-kD_course = 0.0
+kD_course = 0.2
 
 #errors
 error_course = float()
@@ -64,7 +67,7 @@ def vector_from_course(rot):
     rotate = np.array([[math.cos(rot), -math.sin(rot)],
     [math.sin(rot), math.cos(rot)]])
 
-    pos = np.array([[1.0],[0.0]])
+    pos = np.array([[10.0],[0.0]])
     vector = np.dot(rotate,pos)
     return vector
 
@@ -73,9 +76,9 @@ def angle_between_vec(p1, p2):
     ang2 = np.arctan2(*p2[::-1])
     res = (ang1 - ang2) % (2 * np.pi)
     if res > math.pi:
-        res -= 2 * math.pi
+        res -= 2.0 * math.pi
     if res < -math.pi:
-        res += 2 * math.pi
+        res += 2.0 * math.pi
     return res
 
 def get_distance_to(a,b):
@@ -103,7 +106,7 @@ def get_errors():
 
     #get error from course
     v1 = vector_from_course(current_course)
-    v2 = [goal_pose.position.x, goal_pose.position.y]
+    v2 = [goal_pose.position.x-current_pose.position.x, goal_pose.position.y-current_pose.position.y]
     error_course = angle_between_vec(v1,v2)
 
     #get error from distance
@@ -115,19 +118,28 @@ def get_control():
     This is main controller
     :return: cmd_vel
     """
-    global velocity, cmd_vel_msg, error_dist, error_course, pid_pose, pid_course
+    global velocity, cmd_vel_msg, error_dist, error_course, pid_pose, pid_course, finish_flag, goal_tolerance
 
     setPIDk()
+    if (abs(error_course) > math.radians(70)):
+         error_dist = -error_dist
+         error_course = -error_course
+         print("error_course > 90:", abs(math.degrees(error_course)))
+
     pid_pose.update(error_dist)
-    cmd_vel_msg.linear.x = pid_pose.output
+    cmd_vel_msg.linear.x = -pid_pose.output
 
     pid_course.update(error_course)
     cmd_vel_msg.angular.z = pid_course.output
 
     # print("out angle:", pid_course.output)
-
     # clip velicity between min < cmd_vel < max
     cmd_vel_msg.linear.x = np.clip(cmd_vel_msg.linear.x, min_vel, max_vel)
+
+    if(abs(error_dist) < goal_tolerance):
+        finish_flag = True
+
+    print("vel:", cmd_vel_msg.linear.x, "error_dist:", error_dist, abs(error_dist) < goal_tolerance)
     return  cmd_vel_msg
 
 def setPIDk():
@@ -136,6 +148,9 @@ def setPIDk():
     :return:
     """
     global pid_pose, pid_course
+    global kP_pose, kI_pose, kD_pose, \
+        kP_course, kI_course, kD_course
+
     pid_pose.setKp(kP_pose)
     pid_pose.setKi(kI_pose)
     pid_pose.setKd(kD_pose)
@@ -158,12 +173,14 @@ def goal_clb(data):
     Get goal pose
     :type data: PoseStamped
     """
-    global goal_pose, init_flag
+    global goal_pose, init_flag, current_pose, finish_flag
     goal_pose = data.pose
     print ("new goal pose: %s" % (str(goal_pose.position)))
     init_flag = True
+    finish_flag = False
 
 def cfg_callback(config, level):
+    global max_vel, min_vel, max_angle, kP_pose, kI_pose, kD_pose,kP_course, kI_course, kD_course
 
     print("config")
     max_vel = float(config["max_vel"])
@@ -230,6 +247,10 @@ if __name__ == "__main__":
             get_errors()
 
             cmd_vel_msg = get_control()
+
+            if finish_flag:
+                print("finish_flag True")
+                cmd_vel_msg.linear.x = 0.0
 
             vec_pub.publish(cmd_vel_msg) # publish msgs to the robot
             rate.sleep()
