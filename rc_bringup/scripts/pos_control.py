@@ -32,7 +32,7 @@ cmd_vel_topic = "cmd_vel" # output topic
 vel_topic = "velocity"
 goal_topic = "move_base_simple/goal"
 #tf
-base_link = "map"
+base_link = "odom"
 child_link = "base_link"
 
 # geometry methods
