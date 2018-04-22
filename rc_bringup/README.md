@@ -4,15 +4,17 @@ These methods do not pretend to be original, most of it I borrowed from the proj
 
 ## Launch files
 1. **bringup.launch**	- Launches main modules for work in autonomous mode 
-2. **create_map.launch** - Launches for create map via hector slam
-2. **tf.launch**	- setup tf
-3. **mapping_default.launch**	- Hector slam node for created map  
-4. **navigation.launch**- Launch costmap and move_base ("move_base" yet disabled for debugging)
-5. **localizacion.launch** - AMCL (include of navigation.launch)
-6. **move_base.launch**	- move_base (include of navigation.launch)
-7. **odom_laser.launch**	- get tf transform of lidar
-8. **rplidar.launch**	- run lidar
-9. **view_navigation.launch**	- open rviz (for desktop)
+2. **bringup_no_map.launch**	- Launches main modules for work in autonomous mode without a map
+3. **create_map.launch** - Launches for create map via hector slam
+4. **tf.launch**	- setup tf
+5. **mapping_default.launch**	- Hector slam node for created map
+6. **localizacion.launch** - AMCL (include of navigation.launch)
+7. **move_base.launch**	- the base controller, uses [dwa_local_planner](http://wiki.ros.org/dwa_local_planner) (by default included in bringup.launch)
+8. **teb_move_base.launch**	- the base controller, uses [teb_local_planner](http://wiki.ros.org/teb_local_planner)
+9. **odom_laser.launch**	- get tf transform of lidar
+10. **rplidar.launch**	- the prlidar driver
+11. **view_navigation.launch**	- open rviz (for desktop) if you use move_base.launch
+12. **view_navigation_teb.launch**	- open rviz (for desktop) if you use teb_move_base.launch
 
 ## Nodes:
 
@@ -71,7 +73,7 @@ linear:
 
 
 ### 2. tf_to_vel.py<br/>
-**Description:** The pyhton script for Get linear speed from TF.<br/>
+**Description:** The pyhton node for get linear speed from TF.<br/>
 
 #### Subscribed Topics:
 tf([tf/tfMessage.msg](http://docs.ros.org/api/tf/html/msg/tfMessage.html))<br/>
@@ -87,3 +89,51 @@ velocity [geometry_msgs:TwistStamped](http://docs.ros.org/api/geometry_msgs/html
 ~child_link (string, default: "base_link")<br/>
 &emsp;&emsp;*The child tf.<br/>*
 
+### 3. pose_controller.py<br/>
+**Description:** The position controller. Ensures the movement of the car in the goal point (Well, takes into account the orientation at a goal point).<br/>
+
+#### Subscribed Topics:
+tf([tf/tfMessage.msg](http://docs.ros.org/api/tf/html/msg/tfMessage.html))<br/>
+vel_topic ([geometry_msgs:TwistStamped](http://docs.ros.org/api/geometry_msgs/html/msg/TwistStamped.html))<br/>
+move_base_simple/goal ([geometry_msgs:PoseStamped](http://docs.ros.org/api/geometry_msgs/html/msg/PoseStamped.html))<br/>
+
+#### Publisher Topics:
+cmd_vel ([geometry_msgs:Twist](http://docs.ros.org/api/geometry_msgs/html/msg/Twist.html))<br/>
+
+#### Parameters:
+
+Also PID parameters are available through [dynamic_reconfigure](http://wiki.ros.org/dynamic_reconfigure)
+
+~cmd_vel (string, default: "cmd_vel")<br/>
+&emsp;&emsp;*Name of topic for set control.<br/>*
+~vel_topic (string, default: "velocity")<br/>
+&emsp;&emsp;*Name of topic for get velocity data .<br/>*
+~goal_topic (string, default: "move_base_simple/goal")<br/>
+&emsp;&emsp;*Name of topic for get goal point.<br/>*
+~base_link (string, default: "map")<br/>
+&emsp;&emsp;*The perant tf.<br/>*
+~child_link (string, default: "base_link")<br/>
+&emsp;&emsp;*The child tf.<br/>*
+
+~max_vel (float, default: "1.0")<br/>
+&emsp;&emsp;*The maximum output velocity from controller (in m/s).<br/>*
+~min_vel (float, default: "-1.5")<br/>
+&emsp;&emsp;*The minimum output velocity from controller (in m/s).<br/>*
+~max_angle (float, default: "25.0")<br/>
+&emsp;&emsp;*The maximum output angle from controller (in degrees).<br/>*
+~goal_tolerance (float, default: "0.4")<br/>
+&emsp;&emsp;*The maximum  tolerance to goal point (in meters).<br/>*
+
+~kP_pose (float, default: "1.0")<br/>
+&emsp;&emsp;*The "P" coefficient for XY of PID controller.<br/>*
+~kI_pose (float, default: 0.0")<br/>
+&emsp;&emsp;*The "I" coefficient for XY of PID controller.<br/>*
+~kD_pose (float, default: 0.2")<br/>
+&emsp;&emsp;*The "D" coefficient for XY of PID controller.<br/>*
+
+~kP_course (float, default: "0.5")<br/>
+&emsp;&emsp;*The "P" coefficient for course of PID controller.<br/>*
+~kI_course (float, default: "0.0")<br/>
+&emsp;&emsp;*The "I" coefficient for course of PID controller.<br/>*
+~kD_course (float, default: "0.2")<br/>
+&emsp;&emsp;*The "D" coefficient for course of PID controller.<br/>*

@@ -7,7 +7,7 @@ This pos controller for like-car robot
 import math
 import numpy as np
 from PID import PID
-
+import time
 import rospy
 import tf
 from geometry_msgs.msg import Twist, Pose, TwistStamped, PoseStamped
@@ -35,6 +35,7 @@ pid_pose.setWindup(max_vel)
 pid_course.setWindup(max_angle)
 
 goal_tolerance = 0.4
+
 finish_flag = True
 
 kP_pose = 1.0
@@ -118,12 +119,16 @@ def get_control():
     This is main controller
     :return: cmd_vel
     """
-    global velocity, cmd_vel_msg, error_dist, error_course, pid_pose, pid_course, finish_flag, goal_tolerance
+    global velocity, cmd_vel_msg, error_dist, \
+        error_course, pid_pose, \
+        pid_course, finish_flag, \
+        goal_tolerance
 
     setPIDk()
     if (abs(error_course) > math.radians(80)):
-         error_dist = -error_dist
-         error_course = -error_course
+        error_dist = -error_dist
+        print("error_course > 80")
+        error_course = -error_course
     
     pid_pose.update(error_dist)
     cmd_vel_msg.linear.x = -pid_pose.output
@@ -138,7 +143,7 @@ def get_control():
     if(abs(error_dist) < goal_tolerance):
         finish_flag = True
 
-    print("vel:", cmd_vel_msg.linear.x, "error_dist:", error_dist, abs(error_dist) < goal_tolerance)
+    print("error_dist:", error_dist, "error_course", math.degrees(error_course))
     return  cmd_vel_msg
 
 def setPIDk():
@@ -192,7 +197,6 @@ def cfg_callback(config, level):
     kP_course = float(config["kP_course"])
     kI_course = float(config["kI_course"])
     kD_course = float(config["kD_course"])
-    print("config")
     return config
 
 if __name__ == "__main__":
@@ -206,10 +210,20 @@ if __name__ == "__main__":
     vel_topic = rospy.get_param(name_node + '/vel_topic ', vel_topic)
     cmd_vel_topic = rospy.get_param(name_node + '/cmd_vel', cmd_vel_topic)
     goal_topic = rospy.get_param(name_node + '/goal_topic', goal_topic)
-    max_vel = rospy.get_param(name_node + '/max_vel', max_vel)
-    min_vel = rospy.get_param(name_node + '/min_vel', min_vel)
     base_link = rospy.get_param(name_node + '/base_link', base_link)
     child_link = rospy.get_param(name_node + '/child_link', child_link)
+
+    max_vel = rospy.get_param(name_node + '/max_vel', max_vel)
+    min_vel = rospy.get_param(name_node + '/min_vel', min_vel)
+    max_angle = rospy.get_param(name_node + '/max_angle', max_angle)
+    goal_tolerance = rospy.get_param(name_node + '/goal_tolerance', goal_tolerance)
+
+    kP_pose = rospy.get_param(name_node + '/kP_pose', kP_pose)
+    kI_pose = rospy.get_param(name_node + '/kI_pose', kI_pose)
+    kD_pose = rospy.get_param(name_node + '/kD_pose', kD_pose)
+    kP_course = rospy.get_param(name_node + '/kP_course', kP_course)
+    kI_course = rospy.get_param(name_node + '/kI_course', kI_course)
+    kD_course = rospy.get_param(name_node + '/kD_course', kD_course)
 
     # start subscriber
     rospy.Subscriber(vel_topic, TwistStamped, vel_clb)
@@ -250,7 +264,6 @@ if __name__ == "__main__":
             if finish_flag:
                 print("finish_flag True")
                 cmd_vel_msg.linear.x = 0.0
-
             vec_pub.publish(cmd_vel_msg) # publish msgs to the robot
             rate.sleep()
     except KeyboardInterrupt:   # if put ctr+c

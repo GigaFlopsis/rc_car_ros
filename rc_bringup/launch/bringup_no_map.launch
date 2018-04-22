@@ -22,12 +22,6 @@
 	<param name="revers_servo" value="False"/>
 	</node>
 		
-	<!--tf to vel -->	
-	<node pkg="rc_bringup" name="rc_vel_node" type="tf_to_vel.py" respawn="true" output="screen">
-	<param name="vel_topic" value="velocity"/>
-	<param name="base_link" value="odom"/>
-	<param name="child_link" value="base_link"/>
-	</node>
 
 	<!-- Rplidar -->
 	<include file="$(find rc_bringup)/launch/rplidar.launch"/>
@@ -38,6 +32,13 @@
 
 	<!-- Odometry from lidar data-->
 	<include file="$(find rc_bringup)/launch/odom_laser.launch"/>
+
+	<!--tf to vel -->	
+	<node pkg="rc_bringup" name="rc_vel_node" type="tf_to_vel.py" respawn="true" output="screen">
+	<param name="vel_topic" value="velocity"/>
+	<param name="base_link" value="odom"/>
+	<param name="child_link" value="base_link"/>
+	</node>
 
 	<node pkg="tf" type="static_transform_publisher" name="map_to_odom" args="0 0 0 0 0 0 map odom 10" />
 

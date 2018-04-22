@@ -1,8 +1,0 @@
-<launch>
-
-	<include file="$(find rc_bringup)/launch/localizacion.launch"/>
-	<!--include file="$(find rc_bringup)/launch/move_base.launch"/-->
-
-	<include file="$(find rc_bringup)/launch/odom_laser.launch"/>
-	<include file="$(find rc_bringup)/launch/tf.launch"/>
-</launch>
