@@ -22,7 +22,8 @@ In current version, the platform has a lidar [rplidar A2](https://www.slamtec.co
 * added [AMCL](http://wiki.ros.org/amcl)
 * added Imu data from flight controller (cc3d via mavros)
 * added support [teb_local_planner](http://wiki.ros.org/teb_local_planner)
-* write a pose controller
+* added pose controller
 
 ## The current tasks of the project:
 * add odometry using optical encoders (optional)
+* swarm control
