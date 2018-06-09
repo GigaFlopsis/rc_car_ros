@@ -1,0 +1,9 @@
+<launch>
+
+<node pkg="tf" type="static_transform_publisher" name="goal_link_marker_to_tf" args="0 0 0 0 0 -1.57  aruco_marker_3 goal_link 50"/>
+<!--
+	<node pkg="aruco_control" name="aruco_goal_node" type="marker_goal.py" respawn="true" output="screen">
+	</node>
+-->
+
+</launch>

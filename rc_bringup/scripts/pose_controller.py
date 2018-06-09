@@ -34,7 +34,7 @@ pid_course = PID()
 pid_pose.setWindup(max_vel)
 pid_course.setWindup(max_angle)
 
-goal_tolerance = 0.05
+goal_tolerance = 0.4
 
 finish_flag = True
 
