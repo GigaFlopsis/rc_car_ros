@@ -34,7 +34,7 @@ pid_course = PID()
 pid_pose.setWindup(max_vel)
 pid_course.setWindup(max_angle)
 
-goal_tolerance = 0.4
+goal_tolerance = 0.05
 
 finish_flag = True
 
@@ -51,12 +51,12 @@ error_course = float()
 error_dist = float()
 
 #topics
-cmd_vel_topic = "cmd_vel" # output topic
+cmd_vel_topic = "/cmd_vel"
 vel_topic = "velocity"
 goal_topic = "move_base_simple/goal"
 #tf
-base_link = "map"
-child_link = "base_link"
+base_link = "/map"
+child_link = "/base_link"
 
 # geometry methods
 def vector_from_course(rot):
@@ -179,7 +179,6 @@ def goal_clb(data):
     """
     global goal_pose, init_flag, current_pose, finish_flag
     goal_pose = data.pose
-    print ("new goal pose: %s" % (str(goal_pose.position)))
     init_flag = True
     finish_flag = False
 
@@ -243,10 +242,14 @@ if __name__ == "__main__":
                 current_pose.position.x = trans[0]
                 current_pose.position.y = trans[1]
                 current_pose.position.z = trans[2]
-                current_pose.orientation = rot
-                # convert euler from quaternion
+                current_pose.orientation.x = rot[0]
+                current_pose.orientation.y = rot[1]
+                current_pose.orientation.z = rot[2]
+                current_pose.orientation.w = rot[3]
+                # # convert euler from quaternion
                 (roll, pitch, yaw) = tf.transformations.euler_from_quaternion(rot)
                 current_course = yaw
+                print(current_pose)
             except:
                 print("tf not found")
                 continue
@@ -264,6 +267,7 @@ if __name__ == "__main__":
             if finish_flag:
                 print("finish_flag True")
                 cmd_vel_msg.linear.x = 0.0
+
             vec_pub.publish(cmd_vel_msg) # publish msgs to the robot
             rate.sleep()
     except KeyboardInterrupt:   # if put ctr+c
