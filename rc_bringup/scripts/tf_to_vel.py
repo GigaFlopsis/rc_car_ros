@@ -25,10 +25,9 @@ if __name__ == '__main__':
     rospy.init_node('tf_to_velocity_node', anonymous=True)
 
     # Get ros args
-    name_node = rospy.get_name()
-    vel_topic = rospy.get_param(name_node + '/vel_topic ', vel_topic)
-    base_link = rospy.get_param(name_node + '/base_link', base_link)
-    child_link = rospy.get_param(name_node + '/child_link', child_link)
+    vel_topic = rospy.get_param('~vel_topic ', vel_topic)
+    base_link = rospy.get_param('~base_link', base_link)
+    child_link = rospy.get_param('~child_link', child_link)
 
     # Publisher to topic
     vel_pub = rospy.Publisher(vel_topic, TwistStamped, queue_size=1)

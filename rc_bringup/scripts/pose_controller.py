@@ -206,24 +206,23 @@ if __name__ == "__main__":
     rate = rospy.Rate(20)  # 10hz
 
     # Get ros args
-    name_node = rospy.get_name()
-    vel_topic = rospy.get_param(name_node + '/vel_topic ', vel_topic)
-    cmd_vel_topic = rospy.get_param(name_node + '/cmd_vel', cmd_vel_topic)
-    goal_topic = rospy.get_param(name_node + '/goal_topic', goal_topic)
-    base_link = rospy.get_param(name_node + '/base_link', base_link)
-    child_link = rospy.get_param(name_node + '/child_link', child_link)
+    vel_topic = rospy.get_param('~vel_topic ', vel_topic)
+    cmd_vel_topic = rospy.get_param('~cmd_vel', cmd_vel_topic)
+    goal_topic = rospy.get_param('~goal_topic', goal_topic)
+    base_link = rospy.get_param('~base_link', base_link)
+    child_link = rospy.get_param('~child_link', child_link)
 
-    max_vel = rospy.get_param(name_node + '/max_vel', max_vel)
-    min_vel = rospy.get_param(name_node + '/min_vel', min_vel)
-    max_angle = rospy.get_param(name_node + '/max_angle', max_angle)
-    goal_tolerance = rospy.get_param(name_node + '/goal_tolerance', goal_tolerance)
+    max_vel = rospy.get_param('~max_vel', max_vel)
+    min_vel = rospy.get_param('~min_vel', min_vel)
+    max_angle = rospy.get_param('~max_angle', max_angle)
+    goal_tolerance = rospy.get_param('~goal_tolerance', goal_tolerance)
 
-    kP_pose = rospy.get_param(name_node + '/kP_pose', kP_pose)
-    kI_pose = rospy.get_param(name_node + '/kI_pose', kI_pose)
-    kD_pose = rospy.get_param(name_node + '/kD_pose', kD_pose)
-    kP_course = rospy.get_param(name_node + '/kP_course', kP_course)
-    kI_course = rospy.get_param(name_node + '/kI_course', kI_course)
-    kD_course = rospy.get_param(name_node + '/kD_course', kD_course)
+    kP_pose = rospy.get_param('~kP_pose', kP_pose)
+    kI_pose = rospy.get_param('~kI_pose', kI_pose)
+    kD_pose = rospy.get_param('~kD_pose', kD_pose)
+    kP_course = rospy.get_param('~kP_course', kP_course)
+    kI_course = rospy.get_param('~kI_course', kI_course)
+    kD_course = rospy.get_param('~kD_course', kD_course)
 
     # start subscriber
     rospy.Subscriber(vel_topic, TwistStamped, vel_clb)

@@ -1,8 +1,0 @@
-plugin_blacklist:
-# common
-- actuator_control
-# extras
-- altitude
-
-plugin_whitelist: []
-#- 'sys_*'

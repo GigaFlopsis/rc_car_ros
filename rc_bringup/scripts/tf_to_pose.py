@@ -26,9 +26,9 @@ if __name__ == '__main__':
 
     # Get ros args
     name_node = rospy.get_name()
-    pose_topic = rospy.get_param(name_node + '/pose_topic', pose_topic)
-    base_link = rospy.get_param(name_node + '/base_link', base_link)
-    child_link = rospy.get_param(name_node + '/child_link', child_link)
+    pose_topic = rospy.get_param('~pose_topic', pose_topic)
+    base_link = rospy.get_param('~base_link', base_link)
+    child_link = rospy.get_param('~child_link', child_link)
 
     # Publisher to topic
     pose_pub = rospy.Publisher(pose_topic, PoseStamped, queue_size=1)
@@ -40,6 +40,7 @@ if __name__ == '__main__':
         try:
             (trans, rot) = listener.lookupTransform(base_link, child_link, rospy.Time(0))
             current_pos.header = rospy.Header()
+            current_pos.header.stamp = rospy.Time.now()
             current_pos.header.frame_id = "map"
             current_pos.pose.position.x = trans[0]
             current_pos.pose.position.y = trans[1]
