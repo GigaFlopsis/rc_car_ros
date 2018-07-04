@@ -13,6 +13,7 @@ from enum import Enum
 
 
 import rospy
+from std_msgs.msg import Bool
 from geometry_msgs.msg import Twist
 from rc_bringup.msg import CarPwmContol
 from ackermann_msgs.msg import AckermannDriveStamped
@@ -21,6 +22,7 @@ from ackermann_msgs.msg import AckermannDriveStamped
 class RemoteMode(Enum):
     vel = 0
     pwm = 1
+
     drive = 2
 
 
@@ -28,6 +30,8 @@ class RemoteMode(Enum):
 
 servo_pin = 4 # inut pin of servo
 motor_pin = 17 # inut pin of motor
+
+i=0
 
 middle_servo = 1500
 middle_motor = 1500
@@ -39,6 +43,7 @@ max_vel = 1.0 # max speed of the car
 min_vel = 0.7 # min speed of the car
 max_steering_angle = 25.0 # in degrees
 wheelbase = 0.28 # in meters
+prev_vel = 0.0
 
 """Topics for remote car"""
 cmd_vel_topic = "/cmd_vel"       # remote via velocity
@@ -66,7 +71,7 @@ def convert_trans_rot_vel_to_steering_angle(v, omega, wheelbase):
   if omega == 0.0:
     return 0
   if v == 0.0:
-      return math.degrees(omega)
+    return math.degrees(omega)
 
 
   radius = v / omega
@@ -92,7 +97,7 @@ def vel_clb(data):
     time_clb = 0.0
 
 def vel_clb_pwm(data):
-    """
+    """car_break_topic
     Get PWM value from topic
     :param data: velocity value
     :type data: RcCarControl
@@ -122,7 +127,7 @@ def set_rc_remote(mode =  RemoteMode.vel):
     """
     global vel_msg, pwm_msg, \
         intercept_remote, revers_val, \
-        max_steering_angle, wheelbase, drive_msg, pwm_output_msg
+        max_steering_angle, wheelbase, drive_msg, pwm_output_msg, prev_vel
 
     if mode == RemoteMode.pwm:
         pwm_output_msg = pwm_msg
@@ -144,9 +149,35 @@ def set_rc_remote(mode =  RemoteMode.vel):
         if(intercept_remote and 0.0 <= vel_msg.linear.x < 0.1):
            print("return")
            return
-        motor_val = valmap(vel_msg.linear.x, -2.4, 2.4, 1400, 1700, False)
+
+          # car brake
+        if prev_vel > 0 and vel_msg.linear.x == 0: #for forward moving brake
+          # print("RECIEVED +")  
+            motor_val = valmap(0.0, -2.4, 2.4, 1200, 1600, False)
+            pi.set_servo_pulsewidth(motor_pin, motor_val)
+            pwm_output_msg.MotorPWM = motor_val
+            time.sleep(0.5) #first signal need to repay previous value on engine 
+            motor_val = valmap(0.0, -2.4, 2.4, 1200, 1600, False)
+            pi.set_servo_pulsewidth(motor_pin, motor_val)
+            pwm_output_msg.MotorPWM = motor_val
+            time.sleep(0.5) #second to stop the car
+
+        if prev_vel < 0 and vel_msg.linear.x == 0: #for back moving brake
+          # print("RECIEVED -")
+            motor_val = valmap(0.0, -2.4, 2.4, 1200, 1600, False)
+            pi.set_servo_pulsewidth(motor_pin, motor_val)
+            pwm_output_msg.MotorPWM = motor_val
+            time.sleep(0.5)
+            motor_val = valmap(0.0, -2.4, 2.4, 1200, 1600, False)
+            pi.set_servo_pulsewidth(motor_pin, motor_val)
+            pwm_output_msg.MotorPWM = motor_val
+            time.sleep(0.5)
+
+
+        motor_val = valmap(vel_msg.linear.x, -2.4, 2.4, 1200, 1600, False)
         pi.set_servo_pulsewidth(motor_pin, motor_val)
         pwm_output_msg.MotorPWM = motor_val
+        prev_vel = vel_msg.linear.x #read prev velocity value
 
     elif mode == RemoteMode.drive:
             # send servo
@@ -158,7 +189,7 @@ def set_rc_remote(mode =  RemoteMode.vel):
             if (intercept_remote and 0.0 <= drive_msg.drive.speed < 0.1):
                 print("return")
                 return
-            motor_val = valmap(drive_msg.drive.speed, -2.4, 2.4, 1400, 1700, False)
+            motor_val = valmap(drive_msg.drive.speed, -2.4, 2.4, 1300, 1600, False)
             pi.set_servo_pulsewidth(motor_pin, motor_val)
             pwm_output_msg.ServoPWM = servo_val
             pwm_output_msg.MotorPWM = motor_val
@@ -214,7 +245,6 @@ if __name__ == "__main__":
             revers_val = -1.0
         else:
             revers_val = 1.0
-
         rospy.Subscriber(cmd_vel_topic, Twist, vel_clb)
         rospy.Subscriber(pwm_topic, CarPwmContol, vel_clb_pwm)
         rospy.Subscriber(drive_topic, AckermannDriveStamped, vel_clb_drive)
