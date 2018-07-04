@@ -23,7 +23,8 @@ In current version, the platform has a lidar [rplidar A2](https://www.slamtec.co
 * added Imu data from flight controller (cc3d via mavros)
 * added support [teb_local_planner](http://wiki.ros.org/teb_local_planner)
 * added pose controller
-* swarm control
+* swarm control: [swarm-control branch](https://github.com/GigaFlopsis/rc_car_ros/tree/swarm-control)
+* added px4 navigation
 
 ## The current tasks of the project:
 * add odometry using optical encoders (optional)
