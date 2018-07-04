@@ -16,6 +16,7 @@ These methods do not pretend to be original, most of it I borrowed from the proj
 11. **view_navigation.launch**	- open rviz (for desktop) if you use move_base.launch
 12. **view_navigation_teb.launch**	- open rviz (for desktop) if you use teb_move_base.launch
 
+
 ## Nodes:
 
 ### 1. rc_control.py<br/>
