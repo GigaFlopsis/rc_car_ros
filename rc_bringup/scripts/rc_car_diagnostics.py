@@ -6,7 +6,7 @@ from rospy import Header
 from mavros_msgs.msg import State, HomePosition
 from sensor_msgs.msg import BatteryState
 from sensor_msgs.msg import NavSatFix
-from rc_car_msgs.msg import Diagnostics
+from rc_car_msgs.msg import Diagnostics, CarParams
 
 
 
@@ -20,6 +20,7 @@ battery_topic = "/mavros/battery"
 state_topic = "/mavros/state"
 home_gps_topic = "/mavros/home_position/home"
 origin_topic = "/geo/set_origin"
+params_topic = "/params"
 
 # timer init
 state_timer = 0.0
@@ -71,6 +72,14 @@ def origin_clb(data):
     global diag_msg
     diag_msg.init_origin = True
 
+def controller_params_clb(data):
+    """
+    Get params data from rc controller
+    :param data:
+    :return:
+    """
+    global diag_msg
+    diag_msg.params = data
 
 if __name__ == '__main__':
     rospy.init_node('drone_diagnosrics_node', anonymous=True)
@@ -80,8 +89,9 @@ if __name__ == '__main__':
     rospy.Subscriber(state_topic, State, state_clb)
     rospy.Subscriber(home_gps_topic, HomePosition, gps_home_clb)
     rospy.Subscriber(origin_topic, NavSatFix, origin_clb)
+    rospy.Subscriber(params_topic, CarParams, )
 
-    diag_pub = rospy.Publisher(diag_topic,Diagnostics,queue_size=10)
+    diag_pub = rospy.Publisher(diag_topic,Diagnostics, queue_size=10)
 
     old_time = rospy.get_time()
     try:
