@@ -64,9 +64,21 @@ motor: pwm
 servo: pwm
 ```
 
-/params ([rc_car_msgs:CarParams(https://github.com/GigaFlopsis/rc_car_ros/blob/master/rc_car_msgs/msg/CarParams.msg))<br/>
-**Output param**: PWM pulse
+/params ([rc_car_msgs:CarParams](https://github.com/GigaFlopsis/rc_car_ros/blob/master/rc_car_msgs/msg/CarParams.msg))<br/>
+&emsp;&emsp; Output param: PWM pulse
 
+
+#### Service:
+
+/car/set_mode ([std_srvs:SetBool](http://docs.ros.org/kinetic/api/std_srvs/html/srv/SetBool.html))<br/>
+*Enable / Disable motor.<br/>*
+
+```
+bool: data     # on /off motor
+```
+
+/params ([rc_car_msgs:CarParams](https://github.com/GigaFlopsis/rc_car_ros/blob/master/rc_car_msgs/msg/CarParams.msg))<br/>
+**Output param**: PWM pulse
 
 #### Parameters:
 
@@ -81,8 +93,7 @@ servo: pwm
 &emsp;&emsp;*The length wheelbase of car in meters.<br/>*
 ~ max_steering_angle (float, default: "25.0")<br/>
 &emsp;&emsp;*The max wheelbase steering angle of car in degrees.<br/>*
-~ intercept_remote (bool, default: false)<br/>
-&emsp;&emsp;* Toggle for intercept mode remote.<br/>*
+
 
 #### 2. GPIO params:
 ~servo_pin (int, default:"4")<br/>
