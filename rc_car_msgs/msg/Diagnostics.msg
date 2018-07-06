@@ -7,7 +7,6 @@ bool gps_send
 string mode
 float32 battery
 
-float32 wheelbase
-float32 maxVel
-float32 maxAcc
+rc_car_msgs/CarParams params
+
 

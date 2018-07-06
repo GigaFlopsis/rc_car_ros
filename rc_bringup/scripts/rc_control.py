@@ -11,12 +11,12 @@ import numpy as np
 import math
 from enum import Enum
 
-
 import rospy
 from std_msgs.msg import Bool
 from geometry_msgs.msg import Twist, TwistStamped
-from rc_bringup.msg import CarPwmContol
 from ackermann_msgs.msg import AckermannDriveStamped
+from rc_car_msgs.msg import CarParams, CarPwmContol
+
 import PID
 
 
@@ -31,7 +31,21 @@ servo_pin = 4 # inut pin of servo
 motor_pin = 17 # inut pin of motor
 motor_run = True
 use_imu_vel = False
+intercept_remote = False
 
+
+middle_servo = 1500
+middle_motor = 1500
+offset = 47.0 # offset of servo
+revers_servo = False # revers of servo direction
+revers_val = 1.0
+max_vel = 1.0 # max speed of the car
+min_vel = 0.7 # min speed of the car
+max_steering_angle = 25.0 # in degrees
+wheelbase = 0.28 # in meters
+prev_vel = 0.0
+
+# init PID
 motor_pid = PID()
 motor_pid.setWindup(500)
 
@@ -39,41 +53,28 @@ kP = 1.0
 kI = 0.0
 kD = 0.2
 
-middle_servo = 1500
-middle_motor = 1500
-offset = 47.0 # offset of servo
-revers_servo = False # revers of servo direction
-revers_val = 1.0
-
-max_vel = 1.0 # max speed of the car
-min_vel = 0.7 # min speed of the car
-max_steering_angle = 25.0 # in degrees
-wheelbase = 0.28 # in meters
-prev_vel = 0.0
-
-"""Topics for remote car"""
+# init topics
 cmd_vel_topic = "/cmd_vel"       # remote via velocity
 pwm_topic = "/pwm"               # direct remote PWM
 drive_topic ="/ackermann_cmd"   # remote like-car
 pwm_output_topic = "/pwm_output"   # remote like-car
 vel_topic = "/mavros/local_position/velocity"
-
-intercept_remote = False
+param_topic = "/params"
 
 # PWM init
 pi = pigpio.pi()
 pi.set_servo_pulsewidth(servo_pin, middle_servo) # middle servo angle
 pi.set_servo_pulsewidth(motor_pin, middle_motor) # zero speed for motor (different depending on ESC)
 
-# PID init
+# init value
 current_mode = RemoteMode.vel
+current_velocity = TwistStamped()   # vector of velocity
+norm_velocity = float()             # in m/s
+
 vel_msg = Twist()
 pwm_msg = CarPwmContol()
 drive_msg = AckermannDriveStamped()
 pwm_output_msg = CarPwmContol()
-
-current_velocity = TwistStamped()
-norm_velocity = float()  #in m/s
 
 rate = 20
 time_clb = 0.0
@@ -166,6 +167,8 @@ def set_rc_remote(mode):
         intercept_remote, revers_val, \
         max_steering_angle, wheelbase, drive_msg, pwm_output_msg, prev_vel, use_imu_vel, motor_pid
 
+    motor_val = 0.0
+
     if mode == RemoteMode.pwm:
         pwm_output_msg = pwm_msg
         if(pwm_msg.ServoPWM > 0):
@@ -210,8 +213,6 @@ def set_rc_remote(mode):
             error_vel = vel_msg.linear.x - norm_velocity
             motor_pid.update(error_vel)
             motor_val = motor_pid.output + middle_motor
-            pass
-
         else:
             # use relative velocity
             motor_val = valmap(vel_msg.linear.x, -2.4, 2.4, 1200, 1600, False)
@@ -258,15 +259,13 @@ def set_rc_remote(mode):
             error_vel = drive_msg.drive.speed - norm_velocity
             motor_pid.update(error_vel)
             motor_val = motor_pid.output + middle_motor
-            pass
-
         else:
             # use relative velocity
-            motor_val = valmap(drive_msg.drive.speed, -2.4, 2.4, 1200, 1600, False
+            motor_val = valmap(drive_msg.drive.speed, -2.4, 2.4, 1200, 1600, False)
 
         # Send to pwm motor
-        pi.set_servo_pulsewidth(motor_pin, motor_val)
         motor_val = np.clip(motor_val, 1000, 2000)
+        pi.set_servo_pulsewidth(motor_pin, motor_val)
         pwm_output_msg.MotorPWM = motor_val
         prev_vel = drive_msg.drive.speed #read prev velocity value
 
@@ -296,6 +295,20 @@ def valmap(value, istart, istop, ostart, ostop, clip_flag = True):
     else:
         return val
 
+def get_car_params():
+    """
+    Get car params data
+    :return: CarParams
+    """
+    data = CarParams()
+    data.motor_run = motor_run
+    data.maxSteeringAngle = max_steering_angle
+    data.maxVel = max_vel
+    data.intercept_remote = intercept_remote
+    data.wheelbase = wheelbase
+    return data
+
+
 if __name__ == "__main__":
     try:
         rospy.init_node("rc_control")
@@ -317,8 +330,10 @@ if __name__ == "__main__":
         wheelbase = rospy.get_param('~wheelbase', wheelbase)
         drive_topic = rospy.get_param('~drive_topic', drive_topic)
         vel_topic = rospy.get_param('~vel_topic', vel_topic)
-
+        intercept_remote = rospy.get_param('~intercept_remote', intercept_remote)
         use_imu_vel = rospy.get_param('~use_imu_vel', use_imu_vel)
+        param_topic = rospy.get_param('~param_topic', param_topic)
+
         kP = rospy.get_param('~kP', kP)
         kI = rospy.get_param('~kI', kI)
         kD = rospy.get_param('~kD', kD)
@@ -332,6 +347,7 @@ if __name__ == "__main__":
         rospy.Subscriber(pwm_topic, CarPwmContol, pwm_clb)
         rospy.Subscriber(drive_topic, AckermannDriveStamped, drive_vel_clb)
         pwm_pub = rospy.Publisher(pwm_output_topic, CarPwmContol, queue_size=10)
+        param_pub = rospy.Publisher(param_topic, CarParams, queue_size=10)
 
         if use_imu_vel:
             rospy.Service(vel_topic, TwistStamped, velocity_clb)
@@ -379,6 +395,8 @@ if __name__ == "__main__":
                 pi.set_servo_pulsewidth(servo_pin, 0)
                 pi.set_servo_pulsewidth(motor_pin, 0)
                 print("error")
+
+            param_pub.publish(get_car_params())     #publish car params from topic
             rate.sleep()
 
     except KeyboardInterrupt:   # if put ctr+c

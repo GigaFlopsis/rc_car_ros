@@ -55,11 +55,22 @@ linear:
     z: steering_angle_velocity
 ```
 #### Publisher:
+
+/pwm_output ([rc_bringup:CarPwmContol](https://github.com/GigaFlopsis/rc_car_ros/blob/master/rc_bringup/msg/CarPwmContol.msg))<br/>
 **Output param**: PWM pulse
+
+```
+motor: pwm
+servo: pwm
+```
+
+/params ([rc_car_msgs:CarParams(https://github.com/GigaFlopsis/rc_car_ros/blob/master/rc_car_msgs/msg/CarParams.msg))<br/>
+**Output param**: PWM pulse
+
 
 #### Parameters:
 
-#### 1. Controlle params:
+#### 1. Controller params:
 ~use_imu_vel(bool, default: False)<br/>
 &emsp;&emsp;*Use real velocity data from regulator control.<br/>*
 ~max_vel (float, default: "1.0")<br/>
@@ -70,7 +81,8 @@ linear:
 &emsp;&emsp;*The length wheelbase of car in meters.<br/>*
 ~ max_steering_angle (float, default: "25.0")<br/>
 &emsp;&emsp;*The max wheelbase steering angle of car in degrees.<br/>*
-
+~ intercept_remote (bool, default: false)<br/>
+&emsp;&emsp;* Toggle for intercept mode remote.<br/>*
 
 #### 2. GPIO params:
 ~servo_pin (int, default:"4")<br/>
@@ -96,11 +108,11 @@ linear:
 &emsp;&emsp;*The pwm topic of subscribed for direct remote of PWM.<br/>*
 ~pwm_output_topic (string, default: "pwm_output")<br/>
 &emsp;&emsp;*The topic publishes a signal on the motors.<br/>*
-~vel_topic (string, default: "/mavros/local_position/velocity")<br/>
-&emsp;&emsp;*The vel topic of subscribed for get velocity from IMU.<br/> 
+~vel_topic (string, default: "/mavros/local_position/velocity")*<br/>
+&emsp;&emsp;*The vel topic of subscribed for get velocity from IMU.*<br/> 
 &emsp;&emsp;*P.S.: by default mavros send velocity data from NED coords.<br/>*
-
-
+~param_topic(string, default: "/params")*<br/>
+&emsp;&emsp; The topic publishes a car parameters<br/>
 
 ### 2. tf_to_vel.py<br/>
 **Description:** The pyhton node for get linear speed from TF.<br/>
