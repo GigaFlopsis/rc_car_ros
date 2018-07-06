@@ -24,33 +24,44 @@ These methods do not pretend to be original, most of it I borrowed from the proj
 Ideally, you need to adjust the input data so that it matches the actual speed, this can be done by finding the relationship between the speed of the car and the output pulse.<br/>
 
 #### Subscribed Topics:
-cmd_vel ([geometry_msgs:Twist](http://docs.ros.org/api/geometry_msgs/html/msg/Twist.html))<br/>
-pwm ([rc_bringup:CarPwmContol](https://github.com/GigaFlopsis/rc_car_ros/blob/master/rc_bringup/msg/CarPwmContol.msg))<br/>
-ackermann_cmd ([ackermann_msgs:AckermannDriveStamped](http://docs.ros.org/api/ackermann_msgs/html/msg/AckermannDriveStamped.html))<br/>
-
-where Twist:
+/cmd_vel ([geometry_msgs:Twist](http://docs.ros.org/api/geometry_msgs/html/msg/Twist.html))<br/>
 ```
 linear:
-    x: forwand + / - backward 
+    x: forwand + / - backward velocity
     y: 0.0
     z: 0.0
   angular:
     x: 0.0
     y: 0.0
-    z: rotate
+    z: steering_angle
+```
+
+/pwm ([rc_bringup:CarPwmContol](https://github.com/GigaFlopsis/rc_car_ros/blob/master/rc_bringup/msg/CarPwmContol.msg))<br/>
+
+```
+motor: pwm
+servo: pwm
+```
+/ackermann_cmd ([ackermann_msgs:AckermannDriveStamped](http://docs.ros.org/api/ackermann_msgs/html/msg/AckermannDriveStamped.html))<br/>
+
+```
+linear:
+    x: forwand + / - backward velocity
+    y: 0.0
+    z: 0.0
+  angular:
+    x: 0.0
+    y: 0.0
+    z: steering_angle_velocity
 ```
 #### Publisher:
 **Output param**: PWM pulse
 
 #### Parameters:
-~cmd_vel (string, default: "cmd_vel")<br/>
-&emsp;&emsp;*The vel topic of subscribed for remote via velocity.<br/>*
-~drive_topic(string, default: "ackermann_cmd")<br/>
-&emsp;&emsp;*The remote topic of subscribed for remote like-car.<br/>*
-~pwm_topic (string, default: "pwm")<br/>
-&emsp;&emsp;*The pwm topic of subscribed for direct remote of PWM.<br/>*
-~pwm_output_topic (string, default: "pwm_output")<br/>
-&emsp;&emsp;*The topic publishes a signal on the motors.<br/>*
+
+#### 1. Controlle params:
+~use_imu_vel(bool, default: False)<br/>
+&emsp;&emsp;*Use real velocity data from regulator control.<br/>*
 ~max_vel (float, default: "1.0")<br/>
 &emsp;&emsp;*The maximum speed at which the car moves (This is a relative parameter that is configurable by trial).<br/>*
 ~min_vel (float, default: "1.0")<br/>
@@ -59,6 +70,9 @@ linear:
 &emsp;&emsp;*The length wheelbase of car in meters.<br/>*
 ~ max_steering_angle (float, default: "25.0")<br/>
 &emsp;&emsp;*The max wheelbase steering angle of car in degrees.<br/>*
+
+
+#### 2. GPIO params:
 ~servo_pin (int, default:"4")<br/>
 &emsp;&emsp;*The pin out of servo PWM<br/>*
 ~middle_servo (int, default:"1500")<br/>
@@ -71,6 +85,21 @@ linear:
 &emsp;&emsp;*Zero position of motor<br/>*
 ~revers_servo (bool, default:"False")<br/>
 &emsp;&emsp;*Rivers of servo direction<br/>*
+
+
+#### 2. Topics setup:
+~cmd_vel (string, default: "cmd_vel")<br/>
+&emsp;&emsp;*The vel topic of subscribed for remote via velocity.<br/>*
+~drive_topic(string, default: "ackermann_cmd")<br/>
+&emsp;&emsp;*The remote topic of subscribed for remote like-car.<br/>*
+~pwm_topic (string, default: "pwm")<br/>
+&emsp;&emsp;*The pwm topic of subscribed for direct remote of PWM.<br/>*
+~pwm_output_topic (string, default: "pwm_output")<br/>
+&emsp;&emsp;*The topic publishes a signal on the motors.<br/>*
+~vel_topic (string, default: "/mavros/local_position/velocity")<br/>
+&emsp;&emsp;*The vel topic of subscribed for get velocity from IMU.<br/> 
+&emsp;&emsp;*P.S.: by default mavros send velocity data from NED coords.<br/>*
+
 
 
 ### 2. tf_to_vel.py<br/>
@@ -89,6 +118,7 @@ velocity [geometry_msgs:TwistStamped](http://docs.ros.org/api/geometry_msgs/html
 &emsp;&emsp;*The perant tf.<br/>*
 ~child_link (string, default: "base_link")<br/>
 &emsp;&emsp;*The child tf.<br/>*
+
 
 ### 3. pose_controller.py<br/>
 **Description:** The position controller. Ensures the movement of the car in the goal point (Well, takes into account the orientation at a goal point).<br/>

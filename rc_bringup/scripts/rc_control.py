@@ -14,24 +14,30 @@ from enum import Enum
 
 import rospy
 from std_msgs.msg import Bool
-from geometry_msgs.msg import Twist
+from geometry_msgs.msg import Twist, TwistStamped
 from rc_bringup.msg import CarPwmContol
 from ackermann_msgs.msg import AckermannDriveStamped
+import PID
 
 
 class RemoteMode(Enum):
     vel = 0
     pwm = 1
-
     drive = 2
 
 
 # init params
-
 servo_pin = 4 # inut pin of servo
 motor_pin = 17 # inut pin of motor
+motor_run = True
+use_imu_vel = False
 
-i=0
+motor_pid = PID()
+motor_pid.setWindup(500)
+
+kP = 1.0
+kI = 0.0
+kD = 0.2
 
 middle_servo = 1500
 middle_motor = 1500
@@ -48,23 +54,29 @@ prev_vel = 0.0
 """Topics for remote car"""
 cmd_vel_topic = "/cmd_vel"       # remote via velocity
 pwm_topic = "/pwm"               # direct remote PWM
-drive_topic = "/ackermann_cmd"   # remote like-car
+drive_topic ="/ackermann_cmd"   # remote like-car
 pwm_output_topic = "/pwm_output"   # remote like-car
+vel_topic = "/mavros/local_position/velocity"
 
 intercept_remote = False
 
+# PWM init
 pi = pigpio.pi()
 pi.set_servo_pulsewidth(servo_pin, middle_servo) # middle servo angle
 pi.set_servo_pulsewidth(motor_pin, middle_motor) # zero speed for motor (different depending on ESC)
 
+# PID init
+current_mode = RemoteMode.vel
 vel_msg = Twist()
 pwm_msg = CarPwmContol()
 drive_msg = AckermannDriveStamped()
 pwm_output_msg = CarPwmContol()
 
-rate = 5
-time_clb = 0.0
+current_velocity = TwistStamped()
+norm_velocity = float()  #in m/s
 
+rate = 20
+time_clb = 0.0
 
 def convert_trans_rot_vel_to_steering_angle(v, omega, wheelbase):
   global max_steering_angle
@@ -73,61 +85,86 @@ def convert_trans_rot_vel_to_steering_angle(v, omega, wheelbase):
   if v == 0.0:
     return math.degrees(omega)
 
-
   radius = v / omega
   steering_angle = math.degrees(math.atan(wheelbase / radius))
   return np.clip(steering_angle, -max_steering_angle, max_steering_angle)
 
-def vel_clb(data):
+
+## Callbeck from ROS
+
+def cmd_vel_clb(data):
     """
     Get velocity value from topic
     :param data: velocity value
     :type data: Twist
 
     """
-    global vel_msg, time_clb, max_vel, min_vel
+    global vel_msg, time_clb, max_vel, min_vel, current_mode
     vel_msg = data
     vel_msg.linear.x = np.clip(vel_msg.linear.x-vel_msg.linear.y, -max_vel, max_vel)
     if vel_msg.linear.x != 0.0:
         if abs(vel_msg.linear.x) < min_vel:
             vel_msg.linear.x = min_vel if vel_msg.linear.x > 0 else min_vel
 
-
-    set_rc_remote(RemoteMode.vel)
+    current_mode = RemoteMode.vel
     time_clb = 0.0
 
-def vel_clb_pwm(data):
+def pwm_clb(data):
     """car_break_topic
     Get PWM value from topic
     :param data: velocity value
     :type data: RcCarControl
 
     """
-    global pwm_msg, time_clb
+    global pwm_msg, time_clb, current_mode
     pwm_msg = data
-    set_rc_remote(RemoteMode.pwm)
+    current_mode = RemoteMode.pwm
     time_clb = 0.0
 
-def vel_clb_drive(data):
+def drive_vel_clb(data):
     """
        Get drive value from topic
        :param data: velocity and  steering value
        :type data: AckermannDriveStamped
        """
-    global drive_msg,time_clb, max_vel
+    global drive_msg,time_clb, max_vel, current_mode
     drive_msg = data
     drive_msg.drive.speed = np.clip(drive_msg.drive.speed, -max_vel, max_vel)
-    set_rc_remote(RemoteMode.drive)
+    current_mode = RemoteMode.drive
     time_clb = 0.0
 
-def set_rc_remote(mode =  RemoteMode.vel):
+def velocity_clb(data):
+    """
+    Get current velocity from FCU
+    :param data: velocity from NED
+    """
+    global current_velocity, norm_velocity
+    current_velocity.twist.linear.x = data.twist.linear.x
+    current_velocity.twist.linear.y = -data.twist.linear.y
+    current_velocity.twist.linear.z = data.twist.linear.z
+    norm_velocity = np.linalg.norm(np.array([current_velocity.twist.linear.x, current_velocity.twist.linear.y]))
+
+## Other function
+
+def setPIDk():
+    """
+    update PID coefficients
+    :return:
+    """
+    global motor_pid, kP, kI, kD
+
+    motor_pid.setKp(kP)
+    motor_pid.setKi(kI)
+    motor_pid.setKd(kD)
+
+def set_rc_remote(mode):
     """
     Recalculation velocity data to pulse and set to PWM servo and motor
     :return:
     """
     global vel_msg, pwm_msg, \
         intercept_remote, revers_val, \
-        max_steering_angle, wheelbase, drive_msg, pwm_output_msg, prev_vel
+        max_steering_angle, wheelbase, drive_msg, pwm_output_msg, prev_vel, use_imu_vel, motor_pid
 
     if mode == RemoteMode.pwm:
         pwm_output_msg = pwm_msg
@@ -136,9 +173,9 @@ def set_rc_remote(mode =  RemoteMode.vel):
         if(pwm_msg.MotorPWM > 0):
             pi.set_servo_pulsewidth(motor_pin, pwm_msg.MotorPWM)
     elif mode == RemoteMode.vel:
-            # send servo
-            # v = vel_msg.linear.x-vel_msg.linear.y
-            # steering = convert_trans_rot_vel_to_steering_angle(v,vel_msg.angular.z, wheelbase)
+        # send servo
+        # v = vel_msg.linear.x-vel_msg.linear.y
+        # steering = convert_trans_rot_vel_to_steering_angle(v,vel_msg.angular.z, wheelbase)
         servo_val = valmap(math.degrees(vel_msg.angular.z), max_steering_angle*revers_val, max_steering_angle*-revers_val, 1000+offset, 2000+offset)
         pwm_output_msg.ServoPWM = servo_val
         try:
@@ -146,53 +183,93 @@ def set_rc_remote(mode =  RemoteMode.vel):
         except:
             print("error:", servo_val)
             # send motor
-        if(intercept_remote and 0.0 <= vel_msg.linear.x < 0.1):
-           print("return")
-           return
 
-          # car brake
-        if prev_vel > 0 and vel_msg.linear.x == 0: #for forward moving brake
-          # print("RECIEVED +")  
-            motor_val = valmap(0.0, -2.4, 2.4, 1200, 1600, False)
+        # send motor data
+        ## check input velocity data
+        if (intercept_remote and
+                -0.1 <= vel_msg.linear.x < 0.1):  # if target velocity a small, breake speed
+            pi.set_servo_pulsewidth(motor_pin, middle_motor)
+            pwm_output_msg.MotorPWM = middle_motor
+            return
+
+        ## stop motor correction
+        if prev_vel > 0 and vel_msg.linear.x <= 0.0: #for forward moving brake
+            motor_val = valmap(-1.0, -2.4, 2.4, 1200, 1600, False)
             pi.set_servo_pulsewidth(motor_pin, motor_val)
             pwm_output_msg.MotorPWM = motor_val
-            time.sleep(0.5) #first signal need to repay previous value on engine 
+            time.sleep(0.5) #first signal need to repay previous value on engine
             motor_val = valmap(0.0, -2.4, 2.4, 1200, 1600, False)
             pi.set_servo_pulsewidth(motor_pin, motor_val)
             pwm_output_msg.MotorPWM = motor_val
             time.sleep(0.5) #second to stop the car
 
-        if prev_vel < 0 and vel_msg.linear.x == 0: #for back moving brake
-          # print("RECIEVED -")
-            motor_val = valmap(0.0, -2.4, 2.4, 1200, 1600, False)
-            pi.set_servo_pulsewidth(motor_pin, motor_val)
-            pwm_output_msg.MotorPWM = motor_val
-            time.sleep(0.5)
-            motor_val = valmap(0.0, -2.4, 2.4, 1200, 1600, False)
-            pi.set_servo_pulsewidth(motor_pin, motor_val)
-            pwm_output_msg.MotorPWM = motor_val
-            time.sleep(0.5)
+        if use_imu_vel:
+            # PID controlled
+            # motor_val = valmap(vel_msg.linear.x, -2.4, 2.4, 1200, 1600, False)
+            setPIDk() #set PID coefficients
+            error_vel = vel_msg.linear.x - norm_velocity
+            motor_pid.update(error_vel)
+            motor_val = motor_pid.output + middle_motor
+            pass
+
+        else:
+            # use relative velocity
+            motor_val = valmap(vel_msg.linear.x, -2.4, 2.4, 1200, 1600, False)
 
 
-        motor_val = valmap(vel_msg.linear.x, -2.4, 2.4, 1200, 1600, False)
+        # Send to pwm motor
         pi.set_servo_pulsewidth(motor_pin, motor_val)
+        motor_val = np.clip(motor_val, 1000, 2000)
         pwm_output_msg.MotorPWM = motor_val
         prev_vel = vel_msg.linear.x #read prev velocity value
 
     elif mode == RemoteMode.drive:
-            # send servo
-            servo_val = valmap(math.degrees(drive_msg.drive.steering_angle), max_steering_angle * revers_val, max_steering_angle * -revers_val,
-                               1000 + offset, 2000 + offset)
-            pi.set_servo_pulsewidth(servo_pin, servo_val)
+        # send servo
+        v = drive_msg.drive.speed
+        steering = convert_trans_rot_vel_to_steering_angle(v, drive_msg.drive.steering_angle, wheelbase)
+        servo_val = valmap(steering, max_steering_angle * revers_val, max_steering_angle * -revers_val,
+                           1000 + offset, 2000 + offset)
+        pi.set_servo_pulsewidth(servo_pin, servo_val)
+        pwm_output_msg.ServoPWM = servo_val
 
-            # send motor
-            if (intercept_remote and 0.0 <= drive_msg.drive.speed < 0.1):
-                print("return")
-                return
-            motor_val = valmap(drive_msg.drive.speed, -2.4, 2.4, 1300, 1600, False)
+        # send motor data
+        ## check input velocity data
+        if (intercept_remote and
+                -0.1 <= drive_msg.drive.speed < 0.1):  # if target velocity a small, breake speed
+            pi.set_servo_pulsewidth(motor_pin, middle_motor)
+            pwm_output_msg.MotorPWM = middle_motor
+            return
+
+        ## stop motor correction
+        if prev_vel > 0 and drive_msg.drive.speed <= 0.0: #for forward moving brake
+            motor_val = valmap(-1.0, -2.4, 2.4, 1200, 1600, False)
             pi.set_servo_pulsewidth(motor_pin, motor_val)
-            pwm_output_msg.ServoPWM = servo_val
             pwm_output_msg.MotorPWM = motor_val
+            time.sleep(0.5) #first signal need to repay previous value on engine
+            motor_val = valmap(0.0, -2.4, 2.4, 1200, 1600, False)
+            pi.set_servo_pulsewidth(motor_pin, motor_val)
+            pwm_output_msg.MotorPWM = motor_val
+            time.sleep(0.5) #second to stop the car
+
+        if use_imu_vel:
+            # PID controlled
+            # motor_val = valmap(vel_msg.linear.x, -2.4, 2.4, 1200, 1600, False)
+            setPIDk() #set PID coefficients
+            error_vel = drive_msg.drive.speed - norm_velocity
+            motor_pid.update(error_vel)
+            motor_val = motor_pid.output + middle_motor
+            pass
+
+        else:
+            # use relative velocity
+            motor_val = valmap(drive_msg.drive.speed, -2.4, 2.4, 1200, 1600, False
+
+        # Send to pwm motor
+        pi.set_servo_pulsewidth(motor_pin, motor_val)
+        motor_val = np.clip(motor_val, 1000, 2000)
+        pwm_output_msg.MotorPWM = motor_val
+        prev_vel = drive_msg.drive.speed #read prev velocity value
+
     else:
         print("error")
     pwm_pub.publish(pwm_output_msg)
@@ -239,15 +316,25 @@ if __name__ == "__main__":
         max_steering_angle = rospy.get_param('~max_steering_angle', max_steering_angle)
         wheelbase = rospy.get_param('~wheelbase', wheelbase)
         drive_topic = rospy.get_param('~drive_topic', drive_topic)
+        vel_topic = rospy.get_param('~vel_topic', vel_topic)
+
+        use_imu_vel = rospy.get_param('~use_imu_vel', use_imu_vel)
+        kP = rospy.get_param('~kP', kP)
+        kI = rospy.get_param('~kI', kI)
+        kD = rospy.get_param('~kD', kD)
 
         if revers_servo:
             revers_val = -1.0
         else:
             revers_val = 1.0
-        rospy.Subscriber(cmd_vel_topic, Twist, vel_clb)
-        rospy.Subscriber(pwm_topic, CarPwmContol, vel_clb_pwm)
-        rospy.Subscriber(drive_topic, AckermannDriveStamped, vel_clb_drive)
+
+        rospy.Subscriber(cmd_vel_topic, Twist, cmd_vel_clb)
+        rospy.Subscriber(pwm_topic, CarPwmContol, pwm_clb)
+        rospy.Subscriber(drive_topic, AckermannDriveStamped, drive_vel_clb)
         pwm_pub = rospy.Publisher(pwm_output_topic, CarPwmContol, queue_size=10)
+
+        if use_imu_vel:
+            rospy.Service(vel_topic, TwistStamped, velocity_clb)
 
         print ("RC_control params: \n"
                "cmd_vel_topic: %s \n"
@@ -281,14 +368,16 @@ if __name__ == "__main__":
         while not rospy.is_shutdown():
             try:
                 time_clb += 0.2
-                if(time_clb > 1.0):     # if data does not come to close pwm
-                    vel_msg = Twist()
-                    set_rc_remote(RemoteMode.vel)
+
+                if time_clb < 1.0 and motor_run:
+                    set_rc_remote(current_mode)     # set pwm mode
+
+                else:           # not cld remote data break pwm
+                    pi.set_servo_pulsewidth(servo_pin, 0)
+                    pi.set_servo_pulsewidth(motor_pin, 0)
             except:
-                time_clb += 0.2
-                if(time_clb > 1.0):     # if something is wrong to close pwm
-                    vel_msg = Twist()
-                    set_rc_remote(RemoteMode.vel)
+                pi.set_servo_pulsewidth(servo_pin, 0)
+                pi.set_servo_pulsewidth(motor_pin, 0)
                 print("error")
             rate.sleep()
 
