@@ -9,9 +9,9 @@
 
 	<!-- run PX4 mavros run -->
 	<include file="$(find rc_bringup)/launch/px4.launch">
-	<arg name="gcs_ip" default="192.168.128.101"/>
+	<arg name="gcs_ip" default="192.168.1.101"/>
 	<arg name="fcu_port" default="14101" />
-	<arg name="fcu_url" default="/dev/serial0:921600" />
+	<arg name="fcu_url" default="/dev/ttyAMA0:921600" />
 	</include>
 
 	<!-- run Rosbridge server -->
@@ -21,15 +21,15 @@
 	</include>
 
 	<!--remote control -->
-	<node pkg="rc_bringup" name="rc_node" type="rc_control.py" respawn="true" output="screen">
+	<node pkg="rc_bringup" name="rc_control_node" type="rc_control.py" respawn="true" output="screen">
 	<param name="wheelbase" value="0.28"/>
 	<param name="max_vel" value="2.4"/>
-	<param name="min_vel" value="1.0"/>
+	<param name="min_vel" value="-2.4"/>
 
 	<param name="kP" value="1.0"/>
 	<param name="kI" value="0.0"/>
 	<param name="kD" value="0.2"/>
-	<param name="use_imu_vel" value="true"/>
+	<param name="use_imu_vel" value="false"/>
 
 	<param name="cmd_vel" value="cmd_vel"/>
 	<param name="pwm_topic" value="pwm"/>
@@ -39,7 +39,7 @@
 	<param name="middle_servo" value="1500"/>
 	<param name="servo_offset" value="47"/>
 	<param name="motor_pin" value="17"/>
-	<param name="middle_motor" value="1550"/>
+	<param name="middle_motor" value="1500"/>
 	<param name="revers_servo" value="False"/>
 
 	</node>

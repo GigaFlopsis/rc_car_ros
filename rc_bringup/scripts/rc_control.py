@@ -37,8 +37,8 @@ middle_motor = 1500
 offset = 47.0 # offset of servo
 revers_servo = False # revers of servo direction
 revers_val = 1.0
-max_vel = 1.0 # max speed of the car
-min_vel = 0.7 # min speed of the car
+max_vel = 3.0 # max speed of the car
+min_vel = -3.0 # min speed of the car
 max_steering_angle = 25.0 # in degrees
 wheelbase = 0.28 # in meters
 prev_vel = 0.0
@@ -101,13 +101,10 @@ def cmd_vel_clb(data):
     """
     global vel_msg, time_clb, max_vel, min_vel, current_mode
     vel_msg = data
-    vel_msg.linear.x = np.clip(vel_msg.linear.x-vel_msg.linear.y, -max_vel, max_vel)
-    if vel_msg.linear.x != 0.0:
-        if abs(vel_msg.linear.x) < min_vel:
-            vel_msg.linear.x = min_vel if vel_msg.linear.x > 0 else min_vel
-
+    vel_msg.linear.x = np.clip(vel_msg.linear.x, min_vel, max_vel)
     current_mode = RemoteMode.vel
     time_clb = 0.0
+#    print("vel_msg.linear.x", vel_msg.linear.x)
 
 def pwm_clb(data):
     """car_break_topic
@@ -197,21 +194,23 @@ def set_rc_remote(mode):
 
         # send motor data
         ## check input velocity data
-        if (-0.1 <= vel_msg.linear.x < 0.1):  # if target velocity a small, breake speed
+        if (0.0 <= vel_msg.linear.x < 0.1):  # if target velocity a small, breake speed
             pi.set_servo_pulsewidth(motor_pin, middle_motor)
             pwm_output_msg.MotorPWM = middle_motor
-            return
+            pass
 
         ## stop motor correction
         if prev_vel > 0 and vel_msg.linear.x <= 0.0: #for forward moving brake
-            motor_val = valmap(-1.0, -2.4, 2.4, 1200, 1600, False)
+            print("stop motor")
+	    motor_val = valmap(-1.0, -2.4, 2.4, 1300, 1700, False)
             pi.set_servo_pulsewidth(motor_pin, motor_val)
             pwm_output_msg.MotorPWM = motor_val
+	    print("val 1:", motor_val)
             time.sleep(0.5) #first signal need to repay previous value on engine
-            motor_val = valmap(0.0, -2.4, 2.4, 1200, 1600, False)
-            pi.set_servo_pulsewidth(motor_pin, motor_val)
-            pwm_output_msg.MotorPWM = motor_val
-            time.sleep(0.5) #second to stop the car
+            pi.set_servo_pulsewidth(motor_pin, middle_motor)
+            pwm_output_msg.MotorPWM = middle_motor
+            print("val 2:", motor_val)
+	    time.sleep(0.5) #second to stop the car
 
         if use_imu_vel:
             # PID controlled
@@ -222,8 +221,8 @@ def set_rc_remote(mode):
             motor_val = motor_pid.output + middle_motor
         else:
             # use relative velocity
-            motor_val = valmap(vel_msg.linear.x, -2.4, 2.4, 1200, 1600, False)
-
+            motor_val = valmap(vel_msg.linear.x, -2.4, 2.4, 1300, 1700, False)
+            print("send vel", motor_val)
 
         # Send to pwm motor
         pi.set_servo_pulsewidth(motor_pin, motor_val)
@@ -245,17 +244,17 @@ def set_rc_remote(mode):
         if (-0.1 <= drive_msg.drive.speed < 0.1):  # if target velocity a small, breake speed
             pi.set_servo_pulsewidth(motor_pin, middle_motor)
             pwm_output_msg.MotorPWM = middle_motor
-            return
+            print("break motor")
+            pass
 
         ## stop motor correction
         if prev_vel > 0 and drive_msg.drive.speed <= 0.0: #for forward moving brake
-            motor_val = valmap(-1.0, -2.4, 2.4, 1200, 1600, False)
+            motor_val = valmap(-1.0, -2.4, 2.4, 1300, 1700, False)
             pi.set_servo_pulsewidth(motor_pin, motor_val)
             pwm_output_msg.MotorPWM = motor_val
             time.sleep(0.5) #first signal need to repay previous value on engine
-            motor_val = valmap(0.0, -2.4, 2.4, 1200, 1600, False)
-            pi.set_servo_pulsewidth(motor_pin, motor_val)
-            pwm_output_msg.MotorPWM = motor_val
+            pi.set_servo_pulsewidth(motor_pin, middle_motor)
+            pwm_output_msg.MotorPWM = middle_motor
             time.sleep(0.5) #second to stop the car
 
         if use_imu_vel:
@@ -267,7 +266,7 @@ def set_rc_remote(mode):
             motor_val = motor_pid.output + middle_motor
         else:
             # use relative velocity
-            motor_val = valmap(drive_msg.drive.speed, -2.4, 2.4, 1200, 1600, False)
+            motor_val = valmap(drive_msg.drive.speed, -2.4, 2.4, 1300, 1700, False)
 
         # Send to pwm motor
         motor_val = np.clip(motor_val, 1000, 2000)
@@ -277,6 +276,7 @@ def set_rc_remote(mode):
 
     else:
         print("error")
+
     pwm_pub.publish(pwm_output_msg)
 
 def valmap(value, istart, istop, ostart, ostop, clip_flag = True):
