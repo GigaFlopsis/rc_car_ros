@@ -310,7 +310,6 @@ def get_car_params():
     data.motor_run = motor_run
     data.maxSteeringAngle = max_steering_angle
     data.maxVel = max_vel
-    data.intercept_remote = intercept_remote
     data.wheelbase = wheelbase
     return data
 
