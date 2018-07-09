@@ -19,6 +19,7 @@ find_package(catkin REQUIRED COMPONENTS
  generate_dynamic_reconfigure_options(
 
     cfg/pose_controller.cfg
+    cfg/rc_controller.cfg
 )
 
 ## Declare ROS messages and services

@@ -91,8 +91,8 @@ bool: data     # on /off motor
 &emsp;&emsp;*The minimum speed at which the car moves (This is a relative parameter that is configurable by trial).<br/>*
 ~wheelbase (float, default: "0.28")<br/>
 &emsp;&emsp;*The length wheelbase of car in meters.<br/>*
-~ max_steering_angle (float, default: "25.0")<br/>
-&emsp;&emsp;*The max wheelbase steering angle of car in degrees.<br/>*
+~ max_angle (float, default: "25.0")<br/>
+&emsp;&emsp;*The max steering angle of car in degrees.<br/>*
 
 
 #### 2. GPIO params:

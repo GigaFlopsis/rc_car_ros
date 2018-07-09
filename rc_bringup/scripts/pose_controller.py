@@ -185,7 +185,6 @@ def goal_clb(data):
 def cfg_callback(config, level):
     global max_vel, min_vel, max_angle, kP_pose, kI_pose, kD_pose,kP_course, kI_course, kD_course
 
-    print("config")
     max_vel = float(config["max_vel"])
     min_vel = float(config["min_vel"])
     max_angle = math.radians(float(config["max_angle"]))
@@ -198,40 +197,70 @@ def cfg_callback(config, level):
     kD_course = float(config["kD_course"])
     return config
 
+def callback(config):
+   rospy.loginfo("Config set to {max_vel}".format(**config))
+
 if __name__ == "__main__":
 
     # init ros node
     rospy.init_node('rc_pos_controller', anonymous=True)
     rate = rospy.Rate(20)  # 10hz
 
+    # init dynamic reconfigure server
+    cfg_srv = Server(PoseControllerConfig, cfg_callback)
+
     # Get ros args
-    vel_topic = rospy.get_param('~vel_topic ', vel_topic)
-    cmd_vel_topic = rospy.get_param('~cmd_vel', cmd_vel_topic)
-    goal_topic = rospy.get_param('~goal_topic', goal_topic)
-    base_link = rospy.get_param('~base_link', base_link)
-    child_link = rospy.get_param('~child_link', child_link)
+    if rospy.has_param('~vel_topic'):
+        vel_topic = rospy.get_param('~vel_topic', vel_topic)
+    if rospy.has_param('~cmd_vel'):
+        cmd_vel_topic = rospy.get_param('~cmd_vel', cmd_vel_topic)
+    if rospy.has_param('~goal_topic'):
+        goal_topic = rospy.get_param('~goal_topic', goal_topic)
+    if rospy.has_param('~base_link'):
+        base_link = rospy.get_param('~base_link', base_link)
+    if rospy.has_param('~child_link'):
+        child_link = rospy.get_param('~child_link', child_link)
 
-    max_vel = rospy.get_param('~max_vel', max_vel)
-    min_vel = rospy.get_param('~min_vel', min_vel)
-    max_angle = rospy.get_param('~max_angle', max_angle)
-    goal_tolerance = rospy.get_param('~goal_tolerance', goal_tolerance)
-
-    kP_pose = rospy.get_param('~kP_pose', kP_pose)
-    kI_pose = rospy.get_param('~kI_pose', kI_pose)
-    kD_pose = rospy.get_param('~kD_pose', kD_pose)
-    kP_course = rospy.get_param('~kP_course', kP_course)
-    kI_course = rospy.get_param('~kI_course', kI_course)
-    kD_course = rospy.get_param('~kD_course', kD_course)
+    if rospy.has_param('~max_vel'):
+        max_vel = rospy.get_param('~max_vel', max_vel)
+        cfg_srv.update_configuration({"max_vel": max_vel})
+    if rospy.has_param('~min_vel'):
+        min_vel = rospy.get_param('~min_vel', min_vel)
+        cfg_srv.update_configuration({"min_vel": min_vel})
+    if rospy.has_param('~max_angle'):
+        max_angle = rospy.get_param('~max_angle', max_angle)
+        cfg_srv.update_configuration({"max_angle": max_angle})
+    if rospy.has_param('~goal_tolerance'):
+        goal_tolerance = rospy.get_param('~goal_tolerance', goal_tolerance)
+        cfg_srv.update_configuration({"goal_tolerance": goal_tolerance})
+    ## PID params
+    if rospy.has_param('~kP_pose'):
+        kP_pose = rospy.get_param('~kP_pose', kP_pose)
+        cfg_srv.update_configuration({"kP_pose": kP_pose})
+    if rospy.has_param('~kI_pose'):
+        kI_pose = rospy.get_param('~kI_pose', kI_pose)
+        cfg_srv.update_configuration({"kI_pose": kI_pose})
+    if rospy.has_param('~kD_pose'):
+        kD_pose = rospy.get_param('~kD_pose', kD_pose)
+        cfg_srv.update_configuration({"kD_pose": kD_pose})
+    if rospy.has_param('~kP_course'):
+        kP_course = rospy.get_param('~kP_course', kP_course)
+        cfg_srv.update_configuration({"kP_course": kP_course})
+    if rospy.has_param('~kI_course'):
+        kI_course = rospy.get_param('~kI_course', kI_course)
+        cfg_srv.update_configuration({"kI_course": kI_course})
+    if rospy.has_param('~kD_course'):
+        kD_course = rospy.get_param('~kD_course', kD_course)
+        cfg_srv.update_configuration({"kD_course": kD_course})
 
     # start subscriber
     rospy.Subscriber(vel_topic, TwistStamped, vel_clb)
     rospy.Subscriber(goal_topic, PoseStamped, goal_clb)
     vec_pub = rospy.Publisher(cmd_vel_topic, Twist,  queue_size=10)
-    cfg_srv = Server(PoseControllerConfig, cfg_callback)
+
 
     listener = tf.TransformListener()
     old_ros_time = rospy.get_time()
-
     try:
         while not rospy.is_shutdown():
             dt = rospy.get_time() - old_ros_time
@@ -248,13 +277,11 @@ if __name__ == "__main__":
                 # # convert euler from quaternion
                 (roll, pitch, yaw) = tf.transformations.euler_from_quaternion(rot)
                 current_course = yaw
-                print(current_pose)
             except:
-                print("tf not found")
                 continue
 
             if(not init_flag):
-                print("not init")
+                print("pose controller: not init")
                 continue
 
             old_ros_time = rospy.get_time()
@@ -264,7 +291,7 @@ if __name__ == "__main__":
             cmd_vel_msg = get_control()
 
             if finish_flag:
-                print("finish_flag True")
+                print("pose controller: finish_flag True")
                 cmd_vel_msg.linear.x = 0.0
 
             vec_pub.publish(cmd_vel_msg) # publish msgs to the robot

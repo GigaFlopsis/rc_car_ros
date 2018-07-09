@@ -12,19 +12,20 @@ import math
 from enum import Enum
 
 import rospy
-from std_msgs.msg import Bool
 from geometry_msgs.msg import Twist, TwistStamped
 from ackermann_msgs.msg import AckermannDriveStamped
 from rc_car_msgs.msg import CarParams, CarPwmContol
 from std_srvs.srv import SetBool
 from PID import PID
 
+from dynamic_reconfigure.server import Server
+from rc_bringup.cfg import RcVelControllerConfig
+
 
 class RemoteMode(Enum):
     vel = 0
     pwm = 1
     drive = 2
-
 
 # init params
 servo_pin = 4 # inut pin of servo
@@ -37,9 +38,9 @@ middle_motor = 1500
 offset = 47.0 # offset of servo
 revers_servo = False # revers of servo direction
 revers_val = 1.0
-max_vel = 3.0 # max speed of the car
-min_vel = -3.0 # min speed of the car
-max_steering_angle = 25.0 # in degrees
+max_vel = 2.5 # max speed of the car
+min_vel = -2.5 # min speed of the car
+max_angle = 25.0 # in degrees
 wheelbase = 0.28 # in meters
 prev_vel = 0.0
 
@@ -79,7 +80,7 @@ hz = 20
 time_clb = 0.0
 
 def convert_trans_rot_vel_to_steering_angle(v, omega, wheelbase):
-  global max_steering_angle
+  global max_angle
   if omega == 0.0:
     return 0
   if v == 0.0:
@@ -87,7 +88,7 @@ def convert_trans_rot_vel_to_steering_angle(v, omega, wheelbase):
 
   radius = v / omega
   steering_angle = math.degrees(math.atan(wheelbase / radius))
-  return np.clip(steering_angle, -max_steering_angle, max_steering_angle)
+  return np.clip(steering_angle, -max_angle, max_angle)
 
 
 ## Callbeck from ROS
@@ -150,6 +151,31 @@ def SetModeSrv_clb(req):
     global motor_run, intercept_remote
     motor_run = req.data
 
+def cfg_callback(config, level):
+    """
+    Get params from dynamic reconfigure
+    :param config:
+    :param level:
+    :return:
+    """
+
+    global max_vel, min_vel, max_angle, kP, kI, kD, offset, use_imu_vel, motor_run
+
+    print("config")
+    max_vel = float(config["max_vel"])
+    min_vel = float(config["min_vel"])
+    max_angle = math.radians(float(config["max_angle"]))
+    offset = float(config["servo_offset"])
+
+    use_imu_vel = bool(config["use_imu_vel"])
+    motor_run = bool(config["motor_run"])
+
+    kP = float(config["kP"])
+    kI = float(config["kI"])
+    kD = float(config["kD"])
+
+    return config
+
 ## Other function
 
 def setPIDk():
@@ -170,7 +196,7 @@ def set_rc_remote(mode):
     """
     global vel_msg, pwm_msg, \
         intercept_remote, revers_val, \
-        max_steering_angle, wheelbase, drive_msg, pwm_output_msg, prev_vel, use_imu_vel, motor_pid
+        max_angle, wheelbase, drive_msg, pwm_output_msg, prev_vel, use_imu_vel, motor_pid
 
     motor_val = 0.0
 
@@ -184,7 +210,7 @@ def set_rc_remote(mode):
         # send servo
         # v = vel_msg.linear.x-vel_msg.linear.y
         # steering = convert_trans_rot_vel_to_steering_angle(v,vel_msg.angular.z, wheelbase)
-        servo_val = valmap(math.degrees(vel_msg.angular.z), max_steering_angle*revers_val, max_steering_angle*-revers_val, 1000+offset, 2000+offset)
+        servo_val = valmap(math.degrees(vel_msg.angular.z), max_angle * revers_val, max_angle * -revers_val, 1000 + offset, 2000 + offset)
         pwm_output_msg.ServoPWM = servo_val
         try:
                 pi.set_servo_pulsewidth(servo_pin, servo_val)
@@ -234,7 +260,7 @@ def set_rc_remote(mode):
         # send servo
         v = drive_msg.drive.speed
         steering = convert_trans_rot_vel_to_steering_angle(v, drive_msg.drive.steering_angle, wheelbase)
-        servo_val = valmap(steering, max_steering_angle * revers_val, max_steering_angle * -revers_val,
+        servo_val = valmap(steering, max_angle * revers_val, max_angle * -revers_val,
                            1000 + offset, 2000 + offset)
         pi.set_servo_pulsewidth(servo_pin, servo_val)
         pwm_output_msg.ServoPWM = servo_val
@@ -308,7 +334,7 @@ def get_car_params():
     """
     data = CarParams()
     data.motor_run = motor_run
-    data.maxSteeringAngle = max_steering_angle
+    data.maxSteeringAngle = max_angle
     data.maxVel = max_vel
     data.wheelbase = wheelbase
     return data
@@ -319,44 +345,70 @@ if __name__ == "__main__":
         rospy.init_node("rc_control")
         rate = rospy.Rate(hz)
 
+        # init dynamic reconfigure server
+        cfg_srv = Server(RcVelControllerConfig, cfg_callback)
+
+
         # get args from ros params
+        ## topics
         cmd_vel_topic = rospy.get_param('~cmd_vel', cmd_vel_topic)
         pwm_topic = rospy.get_param('~pwm_topic', pwm_topic)
-        servo_pin = rospy.get_param('~servo_pin', servo_pin)
         pwm_output_topic = rospy.get_param('~pwm_output_topic', pwm_output_topic)
-        middle_servo = rospy.get_param('~middle_servo', middle_servo)
-        offset = rospy.get_param('~servo_offset', offset)
-        motor_pin = rospy.get_param('~motor_pin', motor_pin)
-        middle_motor = rospy.get_param('~middle_motor', middle_motor)
-        max_vel = rospy.get_param('~max_vel', max_vel)
-        revers_servo = rospy.get_param('~revers_servo', revers_servo)
-        min_vel = rospy.get_param('~min_vel', min_vel)
-        max_steering_angle = rospy.get_param('~max_steering_angle', max_steering_angle)
-        wheelbase = rospy.get_param('~wheelbase', wheelbase)
         drive_topic = rospy.get_param('~drive_topic', drive_topic)
-        vel_topic = rospy.get_param('~vel_topic', vel_topic)
-        use_imu_vel = rospy.get_param('~use_imu_vel', use_imu_vel)
         param_topic = rospy.get_param('~param_topic', param_topic)
+        vel_topic = rospy.get_param('~vel_topic', vel_topic)
 
-        kP = rospy.get_param('~kP', kP)
-        kI = rospy.get_param('~kI', kI)
-        kD = rospy.get_param('~kD', kD)
+        ## GPIO
+        servo_pin = rospy.get_param('~servo_pin', servo_pin)
+        motor_pin = rospy.get_param('~motor_pin', motor_pin)
+        middle_servo = rospy.get_param('~middle_servo', middle_servo)
+        middle_motor = rospy.get_param('~middle_motor', middle_motor)
+        revers_servo = rospy.get_param('~revers_servo', revers_servo)
+        offset = rospy.get_param('~servo_offset', offset)
+
+        ## rover params
+
+        wheelbase = rospy.get_param('~wheelbase', wheelbase)
+        if rospy.has_param('~max_vel'):
+            max_vel = rospy.get_param('~max_vel', max_vel)
+            cfg_srv.update_configuration({"max_vel": max_vel})
+        if rospy.has_param('~min_vel'):
+            min_vel = rospy.get_param('~min_vel', min_vel)
+            cfg_srv.update_configuration({"min_vel": min_vel})
+        if rospy.has_param('~max_angle'):
+            max_angle = rospy.get_param('~max_angle', max_angle)
+            cfg_srv.update_configuration({"max_angle": max_angle})
+
+        ## PID params
+        if rospy.has_param('~use_imu_vel'):
+            use_imu_vel = rospy.get_param('~use_imu_vel', use_imu_vel)
+            cfg_srv.update_configuration({"use_imu_vel": use_imu_vel})
+        if rospy.has_param('~kP'):
+            kP = rospy.get_param('~kP', kP)
+            cfg_srv.update_configuration({"kP": kP})
+        if rospy.has_param('~kI'):
+            kI = rospy.get_param('~kI', kI)
+            cfg_srv.update_configuration({"kI": kI})
+        if rospy.has_param('~kD'):
+            kD = rospy.get_param('~kD', kD)
+            cfg_srv.update_configuration({"kD": kD})
 
         if revers_servo:
             revers_val = -1.0
         else:
             revers_val = 1.0
 
+        # Subscribe and Publisher to topics
         rospy.Subscriber(cmd_vel_topic, Twist, cmd_vel_clb)
         rospy.Subscriber(pwm_topic, CarPwmContol, pwm_clb)
         rospy.Subscriber(drive_topic, AckermannDriveStamped, drive_vel_clb)
+        rospy.Subscriber(vel_topic, TwistStamped, velocity_clb)
+
         pwm_pub = rospy.Publisher(pwm_output_topic, CarPwmContol, queue_size=10)
         param_pub = rospy.Publisher(param_topic, CarParams, queue_size=10)
 
         s = rospy.Service(setmode_srv_topic, SetBool, SetModeSrv_clb)
 
-        if use_imu_vel:
-            rospy.Service(vel_topic, TwistStamped, velocity_clb)
 
         print ("RC_control params: \n"
                "cmd_vel_topic: %s \n"
@@ -374,19 +426,19 @@ if __name__ == "__main__":
                "middle_motor: %d \n"
                "revers servo: %f \n"
                "===================\n" % (cmd_vel_topic,
-                                        pwm_topic,
-                                        drive_topic,
-                                        pwm_output_topic,
-                                        max_vel,
-                                        min_vel,
-                                        max_steering_angle,
-                                        wheelbase,
-                                        servo_pin,
-                                        middle_servo,
-                                        offset,
-                                        motor_pin,
-                                        middle_motor,
-                                        revers_servo))
+                                          pwm_topic,
+                                          drive_topic,
+                                          pwm_output_topic,
+                                          max_vel,
+                                          min_vel,
+                                          max_angle,
+                                          wheelbase,
+                                          servo_pin,
+                                          middle_servo,
+                                          offset,
+                                          motor_pin,
+                                          middle_motor,
+                                          revers_servo))
         while not rospy.is_shutdown():
             try:
                 time_clb += 0.2
@@ -400,7 +452,7 @@ if __name__ == "__main__":
             except:
                 pi.set_servo_pulsewidth(servo_pin, 0)
                 pi.set_servo_pulsewidth(motor_pin, 0)
-                print("error")
+                print("rc control: error")
 
             param_pub.publish(get_car_params())     #publish car params from topic
             rate.sleep()
