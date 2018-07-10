@@ -102,13 +102,13 @@ class Ui(QtWidgets.QWidget):
         self.portEdit.setObjectName("portEdit")
         self.horizontalLayout_3.addWidget(self.portEdit)
         self.ItemLayout.addLayout(self.horizontalLayout_3, 1, 1, 1, 1)
-        self.ModeComboBox = QtWidgets.QComboBox(self.gridLayoutWidget)
-        self.ModeComboBox.setMaximumSize(QtCore.QSize(128, 16777215))
-        font = QtGui.QFont()
-        font.setFamily("Roboto")
-        self.ModeComboBox.setFont(font)
-        self.ModeComboBox.setObjectName("ModeComboBox")
-        self.ItemLayout.addWidget(self.ModeComboBox, 1, 3, 1, 1)
+        # self.ModeComboBox = QtWidgets.QComboBox(self.gridLayoutWidget)
+        # self.ModeComboBox.setMaximumSize(QtCore.QSize(128, 16777215))
+        # font = QtGui.QFont()
+        # font.setFamily("Roboto")
+        # self.ModeComboBox.setFont(font)
+        # self.ModeComboBox.setObjectName("ModeComboBox")
+        # self.ItemLayout.addWidget(self.ModeComboBox, 1, 3, 1, 1)
         self.ArmButton = QtWidgets.QPushButton(self.gridLayoutWidget)
         self.ArmButton.setMaximumSize(QtCore.QSize(84, 16777215))
         font = QtGui.QFont()
@@ -194,7 +194,7 @@ class Ui(QtWidgets.QWidget):
         _translate = QtCore.QCoreApplication.translate
         self.GpsCheckBox.setText(_translate("MainWindow", "gps"))
         self.HomeCheckBox.setText(_translate("MainWindow", "home"))
-        self.ArmButton.setText(_translate("MainWindow", "Arm"))
+        self.ArmButton.setText(_translate("MainWindow", "Motor run"))
         self.ConnectButton.setText(_translate("MainWindow", "Connect"))
         self.NameLabel_2.setText(_translate("MainWindow", self.name))
         self.BatteryTextLabel.setText(_translate("MainWindow", "bat:"))
@@ -213,8 +213,8 @@ class Ui(QtWidgets.QWidget):
         self.ipEdit.textChanged.connect(self.setIp)
         self.portEdit.textChanged.connect(self.setPort)
 
-        self.ModeComboBox.addItems(mode_list)
-        self.ModeComboBox.activated[str].connect(self.setMode)
+        # self.ModeComboBox.addItems(mode_list)
+        # self.ModeComboBox.activated[str].connect(self.setMode)
         self.car_client.diag_signals.connect(self._getDiag)
         self.car_client.ws.connect_signal.connect(self._changeConnect)
 
@@ -227,11 +227,10 @@ class Ui(QtWidgets.QWidget):
         :return:
         """
         # combo box
-        self.changeComboBox(diag_data.mode)
         self.Batterylabel.setText('{0:.0%}'.format(diag_data.battery))
 
         # arm button
-        armText = "Arm" if not diag_data.armed else "disarm"
+        armText = "Motor on" if not diag_data.params.motor_run else "Motor off"
         self.ArmButton.setText(armText)
         # status gps
         if diag_data.gps_send != self.GpsCheckBox.isChecked():
@@ -273,8 +272,8 @@ class Ui(QtWidgets.QWidget):
     def setMode(self, mode):
         self.car_client.set_mode(mode)
 
-    def changeComboBox(self, mode):
-        self.ModeComboBox.setCurrentText(mode)
+    # def changeComboBox(self, mode):
+    #     self.ModeComboBox.setCurrentText(mode)
 
     def setIp(self):
         data = self.ipEdit.toPlainText()

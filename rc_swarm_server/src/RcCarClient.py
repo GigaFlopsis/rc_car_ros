@@ -6,10 +6,11 @@ import rospy
 from rospy_websocker_client import WebsocketROSClient as ros_ws
 
 from geometry_msgs.msg import  PoseStamped
-from mavros_msgs.srv import SetModeRequest, CommandBoolRequest
+# from mavros_msgs.srv import SetModeRequest, CommandBoolRequest
+from std_srvs.srv import SetBool, SetBoolRequest
 
-from sensor_msgs.msg import BatteryState
-from drone_msgs.msg import Diagnostics
+from sensor_msgs.msg import BatteryState, LaserScan
+from rc_car_msgs.msg import Diagnostics
 from PyQt5.QtCore import QObject, QThread, pyqtSignal, pyqtSlot
 from sensor_msgs.msg import NavSatFix
 from drone_msgs.msg import Goal
@@ -30,6 +31,7 @@ class DroneConnect(QObject):
         self.ws.subscribe('/geo/local_pose', PoseStamped(), name+"/geo/local_pose")
         self.ws.subscribe('/diagnostics', Diagnostics(), name+"/diagnostics")
         self.ws.subscribe('/mavros/global_position/global', NavSatFix(), name+"/global/pose")
+        self.ws.subscribe('/scan', LaserScan(), name+"/scan")
 
         # Ros subscribe
         self.sub_diagnoctics = rospy.Subscriber(name+"/diagnostics", Diagnostics, self.clb_diag)
@@ -56,7 +58,6 @@ class DroneConnect(QObject):
         """
         self.ws.publish("/goal_pose", data)
 
-
     def goal_clb_global(self, data):
         """
         Get goal pose
@@ -77,33 +78,19 @@ class DroneConnect(QObject):
     def is_active(self):
         return self.ws.is_connected()
 
-    def set_mode(self,new_mode):
-        """
-        Функция отправки нового режима работы автопилота.
-
-        @param new_mode: новый режим работы атопилота
-        @type new_mode: String
-        """
-        print("set mode")
-        mode = SetModeRequest()
-        mode.custom_mode = new_mode
-
-        if self.diagnostics.mode != new_mode:
-            self.ws.call_service("mavros/set_mode", mode)
-
     def set_origin(self, topic, data):
         print("set origin")
         self.ws.publish(topic, data)
 
     def arm(self):
-        arm_state = CommandBoolRequest()
-        arm_state.value = True
-        self.ws.call_service("mavros/cmd/arming", arm_state)
+        motor_on = SetBoolRequest()
+        motor_on.data = True
+        self.ws.call_service("/car/set_mode", motor_on)
 
     def disarm(self):
-        arm_state = CommandBoolRequest()
-        arm_state.value = False
-        self.ws.call_service("mavros/cmd/arming", arm_state)
+        motor_on = SetBoolRequest()
+        motor_on.data = True
+        self.ws.call_service("/car/set_mode", motor_on)
 
 
 
