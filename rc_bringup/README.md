@@ -147,9 +147,10 @@ velocity [geometry_msgs:TwistStamped](http://docs.ros.org/api/geometry_msgs/html
 **Description:** The position controller. Ensures the movement of the car in the goal point (Well, takes into account the orientation at a goal point).<br/>
 
 #### Subscribed Topics:
-tf([tf/tfMessage.msg](http://docs.ros.org/api/tf/html/msg/tfMessage.html))<br/>
-vel_topic ([geometry_msgs:TwistStamped](http://docs.ros.org/api/geometry_msgs/html/msg/TwistStamped.html))<br/>
-move_base_simple/goal ([geometry_msgs:PoseStamped](http://docs.ros.org/api/geometry_msgs/html/msg/PoseStamped.html))<br/>
+
+mavros/local_position/velocity ([geometry_msgs:TwistStamped](http://docs.ros.org/api/geometry_msgs/html/msg/TwistStamped.html))<br/>
+goal ([geometry_msgs:PoseStamped](http://docs.ros.org/api/geometry_msgs/html/msg/PoseStamped.html))<br/>
+mavos/local_position/pose ([geometry_msgs:PoseStamped](http://docs.ros.org/api/geometry_msgs/html/msg/PoseStamped.html))<br/>
 
 #### Publisher Topics:
 cmd_vel ([geometry_msgs:Twist](http://docs.ros.org/api/geometry_msgs/html/msg/Twist.html))<br/>
@@ -158,16 +159,14 @@ cmd_vel ([geometry_msgs:Twist](http://docs.ros.org/api/geometry_msgs/html/msg/Tw
 
 Also PID parameters are available through [dynamic_reconfigure](http://wiki.ros.org/dynamic_reconfigure)
 
+~pose_topic (string, default: "mavos/local_position/pose")<br/>
+&emsp;&emsp;*Name of topic for get current position.<br/>*
 ~cmd_vel (string, default: "cmd_vel")<br/>
 &emsp;&emsp;*Name of topic for set control.<br/>*
-~vel_topic (string, default: "velocity")<br/>
+~vel_topic (string, default: "mavros/local_position/velocity")<br/>
 &emsp;&emsp;*Name of topic for get velocity data .<br/>*
-~goal_topic (string, default: "move_base_simple/goal")<br/>
+~goal_topic (string, default: "goal")<br/>
 &emsp;&emsp;*Name of topic for get goal point.<br/>*
-~base_link (string, default: "map")<br/>
-&emsp;&emsp;*The perant tf.<br/>*
-~child_link (string, default: "base_link")<br/>
-&emsp;&emsp;*The child tf.<br/>*
 
 ~max_vel (float, default: "1.0")<br/>
 &emsp;&emsp;*The maximum output velocity from controller (in m/s).<br/>*

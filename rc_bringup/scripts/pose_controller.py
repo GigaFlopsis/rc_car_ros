@@ -14,6 +14,7 @@ from geometry_msgs.msg import Twist, Pose, TwistStamped, PoseStamped
 from geometry_msgs.msg import Twist
 from dynamic_reconfigure.server import Server
 from rc_bringup.cfg import PoseControllerConfig
+from rc_car_msgs.msg import CarPose
 
 #value
 velocity = float()
@@ -52,11 +53,9 @@ error_dist = float()
 
 #topics
 cmd_vel_topic = "/cmd_vel"
-vel_topic = "velocity"
-goal_topic = "move_base_simple/goal"
-#tf
-base_link = "/map"
-child_link = "/base_link"
+vel_topic = "/mavros/local_position/velocity"
+goal_topic = "/goal"
+pose_topic = "/mavros/local_position/pose"
 
 # geometry methods
 def vector_from_course(rot):
@@ -177,10 +176,24 @@ def goal_clb(data):
     Get goal pose
     :type data: PoseStamped
     """
-    global goal_pose, init_flag, current_pose, finish_flag
+    global goal_pose, init_flag, finish_flag
     goal_pose = data.pose
     init_flag = True
     finish_flag = False
+
+def current_pose_clb(data):
+    """
+    Get current pose from topic
+    :param data:
+    :return:
+    """
+    global current_pose, current_course
+
+    current_pose = data.pose
+    rot = [data.pose.orientation.x, data.pose.orientation.y, data.pose.orientation.z, data.pose.orientation.w]
+    # # convert euler from quaternion
+    (roll, pitch, yaw) = tf.transformations.euler_from_quaternion(rot)
+    current_course = yaw
 
 def cfg_callback(config, level):
     global max_vel, min_vel, max_angle, kP_pose, kI_pose, kD_pose,kP_course, kI_course, kD_course
@@ -216,10 +229,8 @@ if __name__ == "__main__":
         cmd_vel_topic = rospy.get_param('~cmd_vel', cmd_vel_topic)
     if rospy.has_param('~goal_topic'):
         goal_topic = rospy.get_param('~goal_topic', goal_topic)
-    if rospy.has_param('~base_link'):
-        base_link = rospy.get_param('~base_link', base_link)
-    if rospy.has_param('~child_link'):
-        child_link = rospy.get_param('~child_link', child_link)
+    if rospy.has_param('~pose_topic'):
+        pose_topic = rospy.get_param('~pose_topic', pose_topic)
 
     if rospy.has_param('~max_vel'):
         max_vel = rospy.get_param('~max_vel', max_vel)
@@ -256,29 +267,14 @@ if __name__ == "__main__":
     # start subscriber
     rospy.Subscriber(vel_topic, TwistStamped, vel_clb)
     rospy.Subscriber(goal_topic, PoseStamped, goal_clb)
+    rospy.Subscriber(pose_topic, PoseStamped, current_pose_clb)
     vec_pub = rospy.Publisher(cmd_vel_topic, Twist,  queue_size=10)
-
 
     listener = tf.TransformListener()
     old_ros_time = rospy.get_time()
     try:
         while not rospy.is_shutdown():
             dt = rospy.get_time() - old_ros_time
-
-            try:
-                (trans, rot) = listener.lookupTransform(base_link, child_link, rospy.Time(0))
-                current_pose.position.x = trans[0]
-                current_pose.position.y = trans[1]
-                current_pose.position.z = trans[2]
-                current_pose.orientation.x = rot[0]
-                current_pose.orientation.y = rot[1]
-                current_pose.orientation.z = rot[2]
-                current_pose.orientation.w = rot[3]
-                # # convert euler from quaternion
-                (roll, pitch, yaw) = tf.transformations.euler_from_quaternion(rot)
-                current_course = yaw
-            except:
-                continue
 
             if(not init_flag):
                 print("pose controller: not init")

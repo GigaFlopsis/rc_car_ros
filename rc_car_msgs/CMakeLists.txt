@@ -17,6 +17,7 @@ add_message_files(FILES
   Diagnostics.msg
   CarParams.msg
   CarPwmContol.msg
+  CarPose.msg
 )
 
 #add_service_files(
