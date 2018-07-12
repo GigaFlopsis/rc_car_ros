@@ -218,12 +218,12 @@ def set_rc_remote(mode):
             print("error:", servo_val)
             # send motor
 
-        # send motor data
-        ## check input velocity data
-        if (0.0 <= vel_msg.linear.x < 0.1):  # if target velocity a small, breake speed
-            pi.set_servo_pulsewidth(motor_pin, middle_motor)
-            pwm_output_msg.MotorPWM = middle_motor
-            pass
+        # # send motor data
+        # ## check input velocity data
+        # if (0.0 <= vel_msg.linear.x < 0.1):  # if target velocity a small, breake speed
+        #     pi.set_servo_pulsewidth(motor_pin, middle_motor)
+        #     pwm_output_msg.MotorPWM = middle_motor
+        #     pass
 
         ## stop motor correction
         if prev_vel > 0 and vel_msg.linear.x <= 0.0: #for forward moving brake
@@ -242,7 +242,7 @@ def set_rc_remote(mode):
             # PID controlled
             # motor_val = valmap(vel_msg.linear.x, -2.4, 2.4, 1200, 1600, False)
             setPIDk() #set PID coefficients
-            error_vel = vel_msg.linear.x - norm_velocity
+            error_vel = norm_velocity - vel_msg.linear.x
             motor_pid.update(error_vel)
             motor_val = motor_pid.output + middle_motor
         else:
@@ -269,12 +269,12 @@ def set_rc_remote(mode):
         pwm_output_msg.ServoPWM = servo_val
 
         # send motor data
-        ## check input velocity data
-        if (-0.1 <= drive_msg.drive.speed < 0.1):  # if target velocity a small, breake speed
-            pi.set_servo_pulsewidth(motor_pin, middle_motor)
-            pwm_output_msg.MotorPWM = middle_motor
-            print("break motor")
-            pass
+        # ## check input velocity data
+        # if (-0.1 <= drive_msg.drive.speed < 0.1):  # if target velocity a small, breake speed
+        #     pi.set_servo_pulsewidth(motor_pin, middle_motor)
+        #     pwm_output_msg.MotorPWM = middle_motor
+        #     print("break motor")
+        #     pass
 
         ## stop motor correction
         if prev_vel > 0 and drive_msg.drive.speed <= 0.0: #for forward moving brake
@@ -290,7 +290,7 @@ def set_rc_remote(mode):
             # PID controlled
             # motor_val = valmap(vel_msg.linear.x, -2.4, 2.4, 1200, 1600, False)
             setPIDk() #set PID coefficients
-            error_vel = drive_msg.drive.speed - norm_velocity
+            error_vel = norm_velocity + drive_msg.drive.speed
             motor_pid.update(error_vel)
             motor_val = motor_pid.output + middle_motor
         else:
