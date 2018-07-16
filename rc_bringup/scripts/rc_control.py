@@ -9,10 +9,11 @@ import pigpio
 import time
 import numpy as np
 import math
+import tf
 from enum import Enum
 
 import rospy
-from geometry_msgs.msg import Twist, TwistStamped
+from geometry_msgs.msg import Twist, TwistStamped, PoseStamped
 from ackermann_msgs.msg import AckermannDriveStamped
 from rc_car_msgs.msg import CarParams, CarPwmContol
 from std_srvs.srv import SetBool
@@ -44,6 +45,8 @@ max_angle = 25.0 # in degrees
 wheelbase = 0.28 # in meters
 prev_vel = 0.0
 
+current_course = float()
+
 # init PID
 motor_pid = PID()
 motor_pid.setWindup(500)
@@ -51,6 +54,13 @@ motor_pid.setWindup(500)
 kP = 1.0
 kI = 0.0
 kD = 0.2
+
+#topics
+cmd_vel_topic = "/cmd_vel"
+vel_topic = "/mavros/local_position/velocity"
+goal_topic = "/goal"
+pose_topic = "/mavros/local_position/pose"
+
 
 # init topics
 cmd_vel_topic = "/cmd_vel"       # remote via velocity
@@ -131,16 +141,36 @@ def drive_vel_clb(data):
     current_mode = RemoteMode.drive
     time_clb = 0.0
 
+def current_pose_clb(data):
+    """
+    Get current pose from topic
+    :param data:
+    :return:
+    """
+    global current_course
+    rot = [data.pose.orientation.x, data.pose.orientation.y, data.pose.orientation.z, data.pose.orientation.w]
+    # convert euler from quaternion
+    (roll, pitch, yaw) = tf.transformations.euler_from_quaternion(rot)
+    current_course = yaw
+
 def velocity_clb(data):
     """
     Get current velocity from FCU
     :param data: velocity from NED
     """
-    global current_velocity, norm_velocity
-    current_velocity.twist.linear.x = data.twist.linear.x
-    current_velocity.twist.linear.y = -data.twist.linear.y
-    current_velocity.twist.linear.z = data.twist.linear.z
-    norm_velocity = np.linalg.norm(np.array([current_velocity.twist.linear.x, current_velocity.twist.linear.y]))
+    global time_clb, current_mode, current_velocity, norm_velocity, current_course
+
+    rot=current_course
+    current_velocity = data
+    rotate=np.array([[math.cos(rot),-math.sin(rot)],
+                     [math.sin(rot),math.cos(rot)]])
+    velocity=np.array([[data.twist.linear.x],
+                       [-data.twist.linear.y]])
+    vector=np.dot(rotate,velocity)
+    norm_velocity =vector[0]
+#    print("vector:",vector[0],vector[1])
+    current_mode = RemoteMode.vel
+    time_clb = 0.0
 
 def SetModeSrv_clb(req):
     """
@@ -251,7 +281,7 @@ def set_rc_remote(mode):
                 motor_val = valmap(vel_msg.linear.x, 0.0 , 6.0, middle_motor, 1700, False)
             if vel_msg.linear.x < 0.0:
                 motor_val = valmap(vel_msg.linear.x, -2.0, 0.0, 1300, middle_motor, False)
-            print("send vel", motor_val)
+#            print("send vel", motor_val)
 
         # Send to pwm motor
         pi.set_servo_pulsewidth(motor_pin, motor_val)
@@ -409,6 +439,7 @@ if __name__ == "__main__":
         rospy.Subscriber(pwm_topic, CarPwmContol, pwm_clb)
         rospy.Subscriber(drive_topic, AckermannDriveStamped, drive_vel_clb)
         rospy.Subscriber(vel_topic, TwistStamped, velocity_clb)
+        rospy.Subscriber(pose_topic, PoseStamped, current_pose_clb)
 
         pwm_pub = rospy.Publisher(pwm_output_topic, CarPwmContol, queue_size=10)
         param_pub = rospy.Publisher(param_topic, CarParams, queue_size=10)
@@ -450,7 +481,8 @@ if __name__ == "__main__":
                 time_clb += 0.2
 
                 if time_clb < 1.0 and motor_run:
-                    set_rc_remote(current_mode)     # set pwm mode
+                    pass
+		    set_rc_remote(current_mode)     # set pwm mode
 
                 else:           # not cld remote data break pwm
                     pi.set_servo_pulsewidth(servo_pin, 0)
@@ -475,3 +507,5 @@ if __name__ == "__main__":
         pi.set_servo_pulsewidth(motor_pin, 0)
         pi.stop()
         GPIO.cleanup()
+
+ 
