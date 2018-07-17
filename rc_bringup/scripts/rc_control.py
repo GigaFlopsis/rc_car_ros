@@ -481,7 +481,6 @@ if __name__ == "__main__":
                 time_clb += 0.2
 
                 if time_clb < 1.0 and motor_run:
-                    pass
 		    set_rc_remote(current_mode)     # set pwm mode
 
                 else:           # not cld remote data break pwm
