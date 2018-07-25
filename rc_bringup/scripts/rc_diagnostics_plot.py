@@ -29,7 +29,7 @@ norm_velocity = 0.0
 norm_acceleration = 0.0
 current_pwm = CarPwmContol()
 
-
+srez = -100
 # ---------------------------------------------------------------------------------------------------------------------
 # ---------- Вспомогательные функции
 def velocity_clb(data):
@@ -101,6 +101,11 @@ def main():
         accel_list.append(norm_acceleration)
         pwm_list.append(current_pwm.MotorPWM)
         time_plot.append(t_)
+	if srez > 0:
+		velocity_list = velocity_list[srez::]
+		accel_list = accel_list[srez::]
+		pwm_list = pwm_list[srez::]
+		time_plot = time_plot[srez::]
 
         # print ('t %s' % t_)
 
