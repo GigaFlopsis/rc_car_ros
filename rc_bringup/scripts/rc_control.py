@@ -478,7 +478,7 @@ if __name__ == "__main__":
                                           revers_servo))
         while not rospy.is_shutdown():
             try:
-                time_clb += 0.2
+                time_clb += 1.0 / hz
 
                 if time_clb < 1.0 and motor_run:
                     set_rc_remote(current_mode)     # set pwm mode
