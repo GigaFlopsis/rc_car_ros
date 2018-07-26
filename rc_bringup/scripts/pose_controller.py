@@ -272,25 +272,31 @@ if __name__ == "__main__":
 
     listener = tf.TransformListener()
     old_ros_time = rospy.get_time()
+    currentTime = 0.0
     try:
         while not rospy.is_shutdown():
             dt = rospy.get_time() - old_ros_time
+            currentTime += dt
 
             if(not init_flag):
-                print("pose controller: not init")
+                if currentTime > 1.0:
+                    print("pose controller: not init")
+                    currentTime =  0.0
                 continue
 
             old_ros_time = rospy.get_time()
-
             get_errors()
-
             cmd_vel_msg = get_control()
 
             if finish_flag:
-                print("pose controller: finish_flag True")
+                if currentTime > 1.0:
+                    print("pose controller: finish_flag True")
+                    currentTime = 0.0
                 cmd_vel_msg.linear.x = 0.0
+                init_flag = False
 
             vec_pub.publish(cmd_vel_msg) # publish msgs to the robot
             rate.sleep()
+
     except KeyboardInterrupt:   # if put ctr+c
         exit(0)
