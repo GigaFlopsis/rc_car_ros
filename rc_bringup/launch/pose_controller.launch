@@ -21,30 +21,25 @@
 	<param name="revers_servo" value="False"/>
 	</node>
 
-
 	<!--pose controller -->
 	<node pkg="rc_bringup" name="rc_pose_controller" type="pose_controller.py" respawn="true" output="screen">
 		<param name="vel_topic" value="velocity"/>
-		<param name="cmd_vel" value="cmd_vel"/>
-		<param name="goal_topic" value="move_base_simple/goal"/>
-		<param name="base_link" value="map"/>
-		<param name="child_link" value="base_link"/>
+		<!--param name="pose_topic" value="mavros/local_position/pose"/-->
+		<param name="pose_topic" value="pose"/>
+		<param name="goal_topic" value="goal"/>
 
-		<param name="max_vel" value="1.0"/>
-		<param name="min_vel" value="-1.5"/>
+		<param name="max_vel" value="2.5"/>
+		<param name="min_vel" value="-2.5"/>
 		<param name="max_angle" value="25.0"/>
 		<param name="goal_tolerance" value="0.4"/>
 
 		<param name="kP_pose" value="1.0"/>
 		<param name="kI_pose" value="0.0"/>
 		<param name="kD_pose" value="0.2"/>
-
 		<param name="kP_course" value="0.5"/>
 		<param name="kI_course" value="0.0"/>
 		<param name="kD_course" value="0.2"/>
 	</node>
-
-
 
 
 

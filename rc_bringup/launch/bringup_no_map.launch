@@ -2,16 +2,13 @@
 
   <arg name="map_file" default="$(find rc_bringup)/map/laba_209.yaml"/>
 
-	<!--gyro -->
-	<!--node name="mpu6050_node" pkg="mpu6050" type="mpu6050_node"/-->
-
 	<!--remote controll -->	
 	<node pkg="rc_bringup" name="rc_node" type="rc_control.py" respawn="true" output="screen">
 	<param name="cmd_vel" value="cmd_vel"/>
 	<param name="pwm_topic" value="pwm"/>
 	<param name="drive_topic" value="ackermann_cmd"/>
-	<param name="max_vel" value="2.4"/>
-	<param name="min_vel" value="0.0"/>
+	<param name="max_vel" value="4.4"/>
+	<param name="min_vel" value="-2.5"/>
 	<param name="wheelbase" value="0.28"/>
 	<param name="max_steering_angle" value="25.0"/>
 	<param name="servo_pin" value="4"/>
@@ -37,6 +34,13 @@
 	<node pkg="rc_bringup" name="rc_vel_node" type="tf_to_vel.py" respawn="true" output="screen">
 	<param name="vel_topic" value="velocity"/>
 	<param name="base_link" value="odom"/>
+	<param name="child_link" value="base_link"/>
+	</node>
+
+	<!--tf to pose-->
+	<node pkg="rc_bringup" name="tf_to_pose" type="tf_to_pose.py" respawn="true" output="screen">
+	<param name="pose_topic" value="pose"/>
+	<param name="base_link" value="map"/>
 	<param name="child_link" value="base_link"/>
 	</node>
 
