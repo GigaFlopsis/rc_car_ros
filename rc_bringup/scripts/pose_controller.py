@@ -53,9 +53,9 @@ error_dist = float()
 
 #topics
 cmd_vel_topic = "/cmd_vel"
-vel_topic = "/mavros/local_position/velocity"
+vel_topic = "/velocity"
 goal_topic = "/goal"
-pose_topic = "/mavros/local_position/pose"
+pose_topic = "/pose"
 
 # geometry methods
 def vector_from_course(rot):
@@ -137,7 +137,7 @@ def get_control():
 
     # print("out angle:", pid_course.output)
     # clip velicity between min < cmd_vel < max
-    cmd_vel_msg.linear.x = np.clip(cmd_vel_msg.linear.x, min_vel, max_vel)
+    #cmd_vel_msg.linear.x = np.clip(cmd_vel_msg.linear.x, min_vel, max_vel)
 
     if(abs(error_dist) < goal_tolerance):
         finish_flag = True
