@@ -6,7 +6,6 @@
 
 import math
 import numpy as np
-from PID import PID
 import time
 import rospy
 import tf
@@ -29,6 +28,8 @@ min_vel = -1.5 # m/s
 max_angle = 25
 
 finish_flag = True
+goal_tolerance = 0.2
+dist=0.0
 
 #topics
 cmd_vel_topic = "/cmd_vel"
@@ -40,6 +41,9 @@ pose_topic = "/mavros/local_position/pose"
 v_des=0.0
 Ev=0.0
 Erot=0.0
+upper_limit_of_ki_sum=0.0
+lower_limit_of_ki_sum=0.0
+
 u_v=0.0
 u_rot=0.0
 plot_x=[0]
@@ -47,13 +51,13 @@ plot_y=[0]
 v=0.0
 sumErot=0
 sumEv=0
+distance=0
 
 def trap_profile_linear_velocity(x, xy_des, v_max):
     d = np.sqrt((x.x - xy_des.position.x) ** 2 + (x.y - xy_des.position.y) ** 2)
-    print("distance = ", d)
     if d <= 1:
-        v_des = 0
-    if d > 1:
+        v_des = -d / (d - 1)
+    else:
         v_des = v_max
     return v_des
 
@@ -74,8 +78,28 @@ def velocity_controller(Ev, Ev_old,sumEv, dT):
     u_v = kp * Ev + ki * sumEv + kd *(Ev-Ev_old) / dT
     return u_v
 
+def get_distance_to(a,b):
+    """
+    get distance to goal point
+    :type a: Pose
+    :type b: Pose
+    :type dist: float
+    :param a: current pose
+    :param b: goal pose
+    :param dist: distance
+    :return: dist
+    """
+    pos = np.array([[b.position.x - a.position.x],
+                    [b.position.y - a.position.y]])
+    dist = np.linalg.norm(pos)
+    return dist
+
 def main():
-    global dt, current_pose, current_course, goal_pose, cmd_vel_msg , u_v, u_rot, Ev, Erot,sumErot,sumEv, plot_x,plot_y, v_des, leinght_v,leinght_rot,v
+    global dt, current_pose, current_course, goal_pose, cmd_vel_msg , u_v, u_rot, Ev, Erot,sumErot,sumEv, plot_x,plot_y, v_des, leinght_v,leinght_rot,v , finish_flag, goal_tolerance, dist, upper_limit_of_ki_sum, lower_limit_of_ki_sum
+    dist=get_distance_to(current_pose, goal_pose)
+    
+    if (abs(dist) < goal_tolerance):
+        finish_flag = True
 
     v_des=trap_profile_linear_velocity(current_pose.position,goal_pose,max_vel)
     dx=(current_pose.position.x-plot_x[0])/dt
@@ -93,25 +117,36 @@ def main():
 
     u_v_constraints = [min_vel,max_vel]
     u_alpha_constraints=[-max_angle,max_angle]
-   
-  
+    upper_limit_of_ki_sum=20.0
+    lower_limit_of_ki_sum=-20.0
     if u_v>u_v_constraints[1]:
         u_v = u_v_constraints[1]
     elif u_v<u_v_constraints[0]:
         u_v = u_v_constraints[0]
     Erot_old=Erot
 
-    Erot=np.arctan2(goal_pose.position.y-current_pose.position.y,goal_pose.position.x-current_pose.position.x)-current_course ############!!!!!!!
+    Erot=np.arctan2(goal_pose.position.y-current_pose.position.y,goal_pose.position.x-current_pose.position.x)-current_course 
     sumErot=sumErot+Erot
+    print(sumErot)
+   # if (abs(np.degrees(Erot))>2.0):
+   #     u_v=-u_v
 
     u_rot = rot_controller(Erot,Erot_old,sumErot,dt)
+    upper_limit_of_ki_sum=34.0
     if u_rot>u_alpha_constraints[1]:
         u_rot=u_alpha_constraints[1]
     elif u_rot<u_alpha_constraints[0]:
         u_rot = u_alpha_constraints[0]
+    if sumErot>=upper_limit_of_ki_sum:
+        sumErot=upper_limit_of_ki_sum
+    if sumErot<=lower_limit_of_ki_sum:
+        sumErot=lower_limit_of_ki_sum
+    vel_and_angle=[u_v,u_rot]
+
     vel_and_angle=[u_v,u_rot]
     cmd_vel_msg.linear.x=vel_and_angle[0]
     cmd_vel_msg.angular.z=vel_and_angle[1]
+
     return cmd_vel_msg
 
 def goal_clb(data):
@@ -210,5 +245,6 @@ if __name__ == "__main__":
 
     except KeyboardInterrupt:   # if put ctr+c
         exit(0)
+
 
 

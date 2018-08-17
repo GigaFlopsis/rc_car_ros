@@ -6,7 +6,6 @@
 
 import math
 import numpy as np
-from PID import PID
 import time
 import rospy
 import tf
@@ -29,6 +28,8 @@ min_vel = -1.5 # m/s
 max_angle = 25
 
 finish_flag = True
+goal_tolerance = 0.2
+dist=0.0
 
 #topics
 cmd_vel_topic = "/cmd_vel"
@@ -40,6 +41,9 @@ pose_topic = "/mavros/local_position/pose"
 v_des=0.0
 Ev=0.0
 Erot=0.0
+upper_limit_of_ki_sum=0.0
+lower_limit_of_ki_sum=0.0
+
 u_v=0.0
 u_rot=0.0
 plot_x=[0]
@@ -47,16 +51,18 @@ plot_y=[0]
 v=0.0
 sumErot=0
 sumEv=0
+distance=0
 
-def trap_profile_linear_velocity(x, xy_des, v_max):
+#trap function for velocity
+def trap_profile_linear_velocity(x, xy_des, v_max): 
     d = np.sqrt((x.x - xy_des.position.x) ** 2 + (x.y - xy_des.position.y) ** 2)
-    print("distance = ", d)
     if d <= 1:
-        v_des = 0
-    if d > 1:
+        v_des = -d / (d - 1)
+    else:
         v_des = v_max
     return v_des
 
+#rotatin servo regulator
 def rot_controller(Erot,Erot_old,sumErot,dT):
     kp = 0.9
     ki = 0.0229
@@ -64,18 +70,42 @@ def rot_controller(Erot,Erot_old,sumErot,dT):
     u_rot = kp * Erot + ki * sumErot + kd *(Erot-Erot_old) / dT
     return u_rot
 
-
-
-
+#velocity motor regulator
 def velocity_controller(Ev, Ev_old,sumEv, dT):
     kp = 0.1
     ki = 0.87
     kd = 0.001
     u_v = kp * Ev + ki * sumEv + kd *(Ev-Ev_old) / dT
     return u_v
+#get distance to goal
+def get_distance_to(a,b):
+    """
+    get distance to goal point
+    :type a: Pose
+    :type b: Pose
+    :type dist: float
+    :param a: current pose
+    :param b: goal pose
+    :param dist: distance
+    :return: dist
+    """
+    pos = np.array([[b.position.x - a.position.x],
+                    [b.position.y - a.position.y]])
+    dist = np.linalg.norm(pos)
+    return dist
 
 def main():
-    global dt, current_pose, current_course, goal_pose, cmd_vel_msg , u_v, u_rot, Ev, Erot,sumErot,sumEv, plot_x,plot_y, v_des, leinght_v,leinght_rot,v
+    global dt, current_pose, current_course, goal_pose, cmd_vel_msg , u_v, u_rot, Ev, Erot,sumErot,sumEv, plot_x,plot_y, v_des, leinght_v,leinght_rot,v , finish_flag, goal_tolerance, dist, upper_limit_of_ki_sum, lower_limit_of_ki_sum
+    dist=get_distance_to(current_pose, goal_pose)
+    #car brake and PID reconfiguration to zero after destination point
+    if (abs(dist) < goal_tolerance):
+        finish_flag = True
+        Ev=0
+        Ev_old=0
+        sumEv=0
+        Erot=0
+        Erot_old=0
+        sumErot=0
 
     v_des=trap_profile_linear_velocity(current_pose.position,goal_pose,max_vel)
     dx=(current_pose.position.x-plot_x[0])/dt
@@ -83,35 +113,45 @@ def main():
     dy=(current_pose.position.y-plot_y[0])/dt
     plot_x[0]=current_pose.position.x
     plot_y[0] = current_pose.position.y
-
+    #general velocity
     v = np.sqrt(dx**2+dy**2)
     Ev_old=Ev
     Ev=v_des-v
     sumEv=sumEv+Ev
-
+    
     u_v=velocity_controller(Ev,Ev_old,sumEv,dt)
-
+    #constraints for lower and upper limits
     u_v_constraints = [min_vel,max_vel]
     u_alpha_constraints=[-max_angle,max_angle]
-   
-  
+    upper_limit_of_ki_sum=15.0
+    lower_limit_of_ki_sum=-15.0
+    #limit checker
     if u_v>u_v_constraints[1]:
         u_v = u_v_constraints[1]
     elif u_v<u_v_constraints[0]:
         u_v = u_v_constraints[0]
     Erot_old=Erot
 
-    Erot=np.arctan2(goal_pose.position.y-current_pose.position.y,goal_pose.position.x-current_pose.position.x)-current_course ############!!!!!!!
+    Erot=np.arctan2(goal_pose.position.y-current_pose.position.y,goal_pose.position.x-current_pose.position.x)-current_course 
     sumErot=sumErot+Erot
+    #if (abs(np.degrees(Erot))>90):
+    #    u_v=min_vel
 
     u_rot = rot_controller(Erot,Erot_old,sumErot,dt)
     if u_rot>u_alpha_constraints[1]:
         u_rot=u_alpha_constraints[1]
     elif u_rot<u_alpha_constraints[0]:
         u_rot = u_alpha_constraints[0]
+    if sumErot>=upper_limit_of_ki_sum:
+        sumErot=upper_limit_of_ki_sum
+    if sumErot<=lower_limit_of_ki_sum:
+        sumErot=lower_limit_of_ki_sum
+    vel_and_angle=[u_v,u_rot]
+    #output values of velocity and rotation
     vel_and_angle=[u_v,u_rot]
     cmd_vel_msg.linear.x=vel_and_angle[0]
     cmd_vel_msg.angular.z=vel_and_angle[1]
+
     return cmd_vel_msg
 
 def goal_clb(data):
@@ -210,5 +250,6 @@ if __name__ == "__main__":
 
     except KeyboardInterrupt:   # if put ctr+c
         exit(0)
+
 
 

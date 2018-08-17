@@ -34,8 +34,8 @@ motor_pin = 17 # inut pin of motor
 motor_run = True
 use_imu_vel = False
 
-middle_servo = 1500
-middle_motor = 1580
+middle_servo = 1550
+middle_motor = 1500
 offset = 47.0 # offset of servo
 revers_servo = False # revers of servo direction
 revers_val = 1.0
@@ -241,7 +241,7 @@ def set_rc_remote(mode):
         # v = vel_msg.linear.x-vel_msg.linear.y
         # steering = convert_trans_rot_vel_to_steering_angle(v,vel_msg.angular.z, wheelbase)
         servo_val = valmap(vel_msg.angular.z, max_angle * revers_val, max_angle * -revers_val, 1000 + offset, 2000 + offset)
-        print("angle",max_angle)
+
         pwm_output_msg.ServoPWM = servo_val
         try:
                 pi.set_servo_pulsewidth(servo_pin, servo_val)

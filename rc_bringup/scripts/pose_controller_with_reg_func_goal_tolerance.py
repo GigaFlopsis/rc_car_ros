@@ -6,7 +6,6 @@
 
 import math
 import numpy as np
-from PID import PID
 import time
 import rospy
 import tf
@@ -29,7 +28,8 @@ min_vel = -1.5 # m/s
 max_angle = 25
 
 finish_flag = True
-
+goal_tolerance = 0.2
+dist=0.0
 #topics
 cmd_vel_topic = "/cmd_vel"
 vel_topic = "/mavros/local_position/velocity"
@@ -47,13 +47,13 @@ plot_y=[0]
 v=0.0
 sumErot=0
 sumEv=0
+distance=0
 
 def trap_profile_linear_velocity(x, xy_des, v_max):
     d = np.sqrt((x.x - xy_des.position.x) ** 2 + (x.y - xy_des.position.y) ** 2)
-    print("distance = ", d)
     if d <= 1:
-        v_des = 0
-    if d > 1:
+        v_des = -d / (d - 1)
+    else:
         v_des = v_max
     return v_des
 
@@ -75,7 +75,7 @@ def velocity_controller(Ev, Ev_old,sumEv, dT):
     return u_v
 
 def main():
-    global dt, current_pose, current_course, goal_pose, cmd_vel_msg , u_v, u_rot, Ev, Erot,sumErot,sumEv, plot_x,plot_y, v_des, leinght_v,leinght_rot,v
+    global dt, current_pose, current_course, goal_pose, cmd_vel_msg , u_v, u_rot, Ev, Erot,sumErot,sumEv, plot_x,plot_y, v_des, leinght_v,leinght_rot,v     
 
     v_des=trap_profile_linear_velocity(current_pose.position,goal_pose,max_vel)
     dx=(current_pose.position.x-plot_x[0])/dt
@@ -110,8 +110,9 @@ def main():
     elif u_rot<u_alpha_constraints[0]:
         u_rot = u_alpha_constraints[0]
     vel_and_angle=[u_v,u_rot]
-    cmd_vel_msg.linear.x=vel_and_angle[0]
+    #cmd_vel_msg.linear.x=vel_and_angle[0]
     cmd_vel_msg.angular.z=vel_and_angle[1]
+
     return cmd_vel_msg
 
 def goal_clb(data):
@@ -210,5 +211,6 @@ if __name__ == "__main__":
 
     except KeyboardInterrupt:   # if put ctr+c
         exit(0)
+
 
 

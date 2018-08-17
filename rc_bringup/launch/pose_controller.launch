@@ -5,27 +5,27 @@
 	<param name="cmd_vel" value="cmd_vel"/>
 	<param name="pwm_topic" value="pwm"/>
 	<param name="drive_topic" value="ackermann_cmd"/>
-	<param name="max_vel" value="4.6"/>
-	<param name="min_vel" value="-2.0"/>
+	<param name="max_vel" value="1.0"/>
+	<param name="min_vel" value="-1.2"/>
 	<param name="wheelbase" value="0.28"/>
 	<param name="max_steering_angle" value="25.0"/>
 	<param name="servo_pin" value="22"/>
 	<param name="middle_servo" value="1550"/>
 	<param name="servo_offset" value="47"/>    
 	<param name="motor_pin" value="4"/>
-	<param name="middle_motor" value="1500"/>
+	<param name="middle_motor" value="1550"/>
 	<param name="revers_servo" value="True"/>
 	</node>
 
-	<!--pose controller -->
-	<node pkg="rc_bringup" name="rc_pose_controller" type="pose_controller_with_reg_func2.py" respawn="true" output="screen">
-		<param name="vel_topic" value="velocity"/>
+	<!--pose controller -->	
+        <node pkg="rc_bringup" name="rc_pose_controller" type="pose_controller_with_reg_func3.py" respawn="true" output="screen">	
+                <param name="vel_topic" value="velocity"/>
 		<!--param name="pose_topic" value="mavros/local_position/pose"/-->
 		<param name="pose_topic" value="pose"/>
 		<param name="goal_topic" value="goal"/>
 
-		<param name="max_vel" value="2.4"/>
-		<param name="min_vel" value="1.0"/>
+		<param name="max_vel" value="0.56"/>
+		<param name="min_vel" value="-1.2"/>
 		<param name="max_angle" value="25.0"/>
 		<param name="goal_tolerance" value="0.2"/>
 
