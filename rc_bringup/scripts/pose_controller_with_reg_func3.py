@@ -39,6 +39,15 @@ pose_topic = "/mavros/local_position/pose"
 pps = YamlParams()
 init_server = False
 
+#PID
+kP_pose=float
+kI_pose=float
+kD_pose=float
+
+kP_course=float
+kI_course=float
+kD_course=float
+
 #reg_functions
 v_des=0.0
 Ev=0.0
@@ -66,18 +75,18 @@ def trap_profile_linear_velocity(x, xy_des, v_max):
 
 #rotatin servo regulator
 def rot_controller(Erot,Erot_old,sumErot,dT):
-    kp = 0.9
-    ki = 0.00258
-    kd = 0.00477 
-    u_rot = kp * Erot + ki * sumErot + kd *(Erot-Erot_old) / dT
+    kP_course = 0.9
+    kI_course = 0.00258
+    kD_course = 0.00477 
+    u_rot = kP * Erot + kI * sumErot + kD *(Erot-Erot_old) / dT
     return u_rot
 
 #velocity motor regulator
 def velocity_controller(Ev, Ev_old,sumEv, dT):
-    kp = 0.1
-    ki = 0.87
-    kd = 0.001
-    u_v = kp * Ev + ki * sumEv + kd *(Ev-Ev_old) / dT
+    kP_pose = 0.1
+    kI_pose= 0.87
+    kD_pose= 0.001
+    u_v = kP * Ev + kI * sumEv + kD *(Ev-Ev_old) / dT
     return u_v
 #get distance to goal
 def get_distance_to(a,b):
@@ -97,10 +106,8 @@ def get_distance_to(a,b):
     return dist
 
 def main():
-    global dt, current_pose, current_course, goal_pose, cmd_vel_msg , u_v, u_rot, Ev, Erot,sumErot,sumEv, plot_x,plot_y, v_des, leinght_v,leinght_rot,v , finish_flag, goal_tolerance, dist, upper_limit_of_ki_sum, lower_limit_of_ki_sum, Ev_old, Erot_old, cfg_srv
+    global dt, current_pose, current_course, goal_pose, cmd_vel_msg , u_v, u_rot, Ev, Erot,sumErot,sumEv, plot_x,plot_y, v_des, leinght_v,leinght_rot,v , finish_flag, goal_tolerance, dist, upper_limit_of_ki_sum, lower_limit_of_ki_sum, Ev_old, Erot_old
 
-    cfg_srv = Server(DroneRegConfig, cfg_callback)
-    set_server_value(cfg_srv)
     dist=get_distance_to(current_pose, goal_pose)
     #car brake and PID reconfiguration to zero after destination point
     if (abs(dist) < goal_tolerance):
@@ -183,6 +190,12 @@ def cfg_callback(config, level):
     max_vel = float(config["max_vel"])
     min_vel = float(config["min_vel"])
     max_angle = math.radians(float(config["max_angle"]))
+    kP_pose = float(config["kP_pose"])
+    kI_pose = float(config["kI_pose"])
+    kD_pose = float(config["kD_pose"])
+    kP_course = float(config["kP_course"])
+    kI_course = float(config["kI_course"])
+    kD_course = float(config["kD_course"])
     if init_server:
         # opening pid params file
         pps.params_open()
@@ -192,6 +205,13 @@ def cfg_callback(config, level):
         pps.params_set('max_vel', config["max_vel"])
         pps.params_set('min_vel', config["min_vel"])
         pps.params_set('max_angle', config["max_angle"])
+        pps.params_set('kP_pose', config["kP_pose"])
+        pps.params_set('kI_pose', config["kI_pose"])
+        pps.params_set('kD_pose', config["kD_pose"])
+        pps.params_set('kP_course', config["kP_course"])
+        pps.params_set('kI_course', config["kI_course"])
+        pps.params_set('kD_course', config["kD_course"])
+
 
         # saving to file
         pps.params_save()
@@ -210,11 +230,23 @@ def set_server_value(cfg_srv):
     max_vel = pps.params_get('max_vel')
     min_vel = pps.params_get('min_vel')
     max_angle = pps.params_get('max_angle')
+    kP_pose = pps.params_get('kP_pose')
+    kI_pose = pps.params_get('kI_pose')
+    kD_pose = pps.params_get('kD_pose')
+    kP_course = pps.params_get('kP_course')
+    kI_course = pps.params_get('kI_course')
+    kD_course = pps.params_get('kD_course')
 
 
-    cfg_srv.update_configuration({'hor_kp': pps.params_get('max_vel'),
-                                  'hor_kd': pps.params_get('min_vel'),
-                                  'max_angle': pps.params_get('max_angle')})
+    cfg_srv.update_configuration({'max_vel': pps.params_get('max_vel'),
+                                  'min_vel': pps.params_get('min_vel'),
+                                  'max_angle': pps.params_get('max_angle'),
+                                  'kP_pose': pps.params_get('kP_pose'),
+                                  'kI_pose': pps.params_get('kI_pose'),
+                                  'kD_pose': pps.params_get('kD_pose'),
+                                  'kP_course': pps.params_get('kP_course'),
+                                  'kI_course': pps.params_get('kI_course'),
+                                  'kD_course': pps.params_get('kD_course')})
     pps.params_save()
     print ("save from set server value")
 
@@ -229,7 +261,7 @@ if __name__ == "__main__":
 
     # init dynamic reconfigure server
     cfg_srv = Server(PoseControllerConfig, cfg_callback)
-
+    set_server_value(cfg_srv)
     # Get ros args
     if rospy.has_param('~vel_topic'):
         vel_topic = rospy.get_param('~vel_topic', vel_topic)
@@ -249,7 +281,25 @@ if __name__ == "__main__":
     if rospy.has_param('~max_angle'):
         max_angle = rospy.get_param('~max_angle', max_angle)
         cfg_srv.update_configuration({"max_angle": max_angle})
-
+    ## PID params
+    if rospy.has_param('~kP_pose'):  #pose means vel in case of repeatativenes but just now
+        kP_pose = rospy.get_param('~kP_pose', kP_pose)
+        cfg_srv.update_configuration({"kP_pose": kP_pose})
+    if rospy.has_param('~kI_pose'):
+        kI_pose = rospy.get_param('~kI_pose', kI_pose)
+        cfg_srv.update_configuration({"kI_pose": kI_pose})
+    if rospy.has_param('~kD_pose'):
+        kD_pose = rospy.get_param('~kD_pose', kD_pose)
+        cfg_srv.update_configuration({"kD_pose": kD_pose})
+    if rospy.has_param('~kP_course'):
+        kP_course = rospy.get_param('~kP_course', kP_course)
+        cfg_srv.update_configuration({"kP_course": kP_course})
+    if rospy.has_param('~kI_course'):
+        kI_course = rospy.get_param('~kI_course', kI_course)
+        cfg_srv.update_configuration({"kI_course": kI_course})
+    if rospy.has_param('~kD_course'):
+        kD_course = rospy.get_param('~kD_course', kD_course)
+        cfg_srv.update_configuration({"kD_course": kD_course})
     # start subscriber
     #rospy.Subscriber(vel_topic, TwistStamped, vel_clb)
     rospy.Subscriber(goal_topic, PoseStamped, goal_clb)

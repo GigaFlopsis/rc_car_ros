@@ -24,9 +24,9 @@
 		<param name="pose_topic" value="pose"/>
 		<param name="goal_topic" value="goal"/>
 
-		<param name="max_vel" value="0.9"/>
+		<!--<param name="max_vel" value="0.9"/>
 		<param name="min_vel" value="-1"/>
-		<param name="max_angle" value="25.0"/>
+		<param name="max_angle" value="25.0"/>-->
 		<param name="goal_tolerance" value="0.2"/>
 
 		<param name="kP_pose" value="4.5"/>
