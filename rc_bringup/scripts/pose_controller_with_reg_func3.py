@@ -6,14 +6,12 @@
 
 import math
 import numpy as np
-import time
 import rospy
 import tf
-from geometry_msgs.msg import Twist, Pose, TwistStamped, PoseStamped
-from geometry_msgs.msg import Twist
-from dynamic_reconfigure.server import Server
+from geometry_msgs.msg import Twist, Pose, PoseStamped
 from rc_bringup.cfg import PoseControllerConfig
-from rc_car_msgs.msg import CarPose
+from dynamic_reconfigure.server import Server
+from pid_params_saver import YamlParams
 
 #value
 velocity = float()
@@ -36,6 +34,10 @@ cmd_vel_topic = "/cmd_vel"
 vel_topic = "/mavros/local_position/velocity"
 goal_topic = "/goal"
 pose_topic = "/mavros/local_position/pose"
+
+#cfg_values
+pps = YamlParams()
+init_server = False
 
 #reg_functions
 v_des=0.0
@@ -95,7 +97,10 @@ def get_distance_to(a,b):
     return dist
 
 def main():
-    global dt, current_pose, current_course, goal_pose, cmd_vel_msg , u_v, u_rot, Ev, Erot,sumErot,sumEv, plot_x,plot_y, v_des, leinght_v,leinght_rot,v , finish_flag, goal_tolerance, dist, upper_limit_of_ki_sum, lower_limit_of_ki_sum
+    global dt, current_pose, current_course, goal_pose, cmd_vel_msg , u_v, u_rot, Ev, Erot,sumErot,sumEv, plot_x,plot_y, v_des, leinght_v,leinght_rot,v , finish_flag, goal_tolerance, dist, upper_limit_of_ki_sum, lower_limit_of_ki_sum, Ev_old, Erot_old, cfg_srv
+
+    cfg_srv = Server(DroneRegConfig, cfg_callback)
+    set_server_value(cfg_srv)
     dist=get_distance_to(current_pose, goal_pose)
     #car brake and PID reconfiguration to zero after destination point
     if (abs(dist) < goal_tolerance):
@@ -173,13 +178,45 @@ def current_pose_clb(data):
     current_course = yaw
 
 def cfg_callback(config, level):
-    global max_vel, min_vel, max_angle
+    global max_vel, min_vel, max_angle, init_server
 
     max_vel = float(config["max_vel"])
     min_vel = float(config["min_vel"])
     max_angle = math.radians(float(config["max_angle"]))
+    if init_server:
+        # opening pid params file
+        pps.params_open()
+        print ("open from cfg callback")
+
+        # setting values
+        pps.params_set('max_vel', config["max_vel"])
+        pps.params_set('min_vel', config["min_vel"])
+        pps.params_set('max_angle', config["max_angle"])
+
+        # saving to file
+        pps.params_save()
+        print ("save from cfg callback")
+
+    init_server = True
 
     return config
+
+def set_server_value(cfg_srv):
+    global max_vel, min_vel, max_angle, init_server
+
+    pps.params_open()
+    print ("open from set server value")
+
+    max_vel = pps.params_get('max_vel')
+    min_vel = pps.params_get('min_vel')
+    max_angle = pps.params_get('max_angle')
+
+
+    cfg_srv.update_configuration({'hor_kp': pps.params_get('max_vel'),
+                                  'hor_kd': pps.params_get('min_vel'),
+                                  'max_angle': pps.params_get('max_angle')})
+    pps.params_save()
+    print ("save from set server value")
 
 def callback(config):
    rospy.loginfo("Config set to {max_vel}".format(**config))
