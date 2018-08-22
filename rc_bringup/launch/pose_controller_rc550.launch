@@ -5,8 +5,8 @@
 	<param name="cmd_vel" value="cmd_vel"/>
 	<param name="pwm_topic" value="pwm"/>
 	<param name="drive_topic" value="ackermann_cmd"/>
-	<param name="max_vel" value="1.0"/>
-	<param name="min_vel" value="-1.2"/>
+	<param name="max_vel" value="1"/>
+	<param name="min_vel" value="-1"/>
 	<param name="wheelbase" value="0.28"/>
 	<param name="max_steering_angle" value="25.0"/>
 	<param name="servo_pin" value="22"/>
@@ -14,7 +14,6 @@
 	<param name="servo_offset" value="47"/>    
 	<param name="motor_pin" value="4"/>
 	<param name="middle_motor" value="1550"/>
-	<!--<param name="revers_servo" value="True"/>-->
         <param name="revers_servo" value="False"/>
 	</node>
 
@@ -25,8 +24,8 @@
 		<param name="pose_topic" value="pose"/>
 		<param name="goal_topic" value="goal"/>
 
-		<param name="max_vel" value="0.59"/>
-		<param name="min_vel" value="-1.2"/>
+		<param name="max_vel" value="0.9"/>
+		<param name="min_vel" value="-1"/>
 		<param name="max_angle" value="25.0"/>
 		<param name="goal_tolerance" value="0.2"/>
 

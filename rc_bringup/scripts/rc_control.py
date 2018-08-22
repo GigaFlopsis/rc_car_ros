@@ -35,7 +35,8 @@ motor_run = True
 use_imu_vel = False
 
 middle_servo = 1550
-middle_motor = 1500
+middle_motor = 1550 # for rc550
+#middle_motor = 1500 #for rc540
 offset = 47.0 # offset of servo
 revers_servo = False # revers of servo direction
 revers_val = 1.0
@@ -257,17 +258,17 @@ def set_rc_remote(mode):
         #     pass
 
         ## stop motor correction
-        if prev_vel > 0 and vel_msg.linear.x <= 0.0: #for forward moving brake
-            print("stop motor")
-            motor_val = 1300
-            pi.set_servo_pulsewidth(motor_pin, motor_val)
-            pwm_output_msg.MotorPWM = motor_val
-            print("val 1:", motor_val)
-            time.sleep(0.5) #first signal need to repay previous value on engine
-            pi.set_servo_pulsewidth(motor_pin, middle_motor)
-            pwm_output_msg.MotorPWM = middle_motor
-            print("val 2:", motor_val)
-            time.sleep(0.5) #second to stop the car
+       # if prev_vel > 0 and vel_msg.linear.x <= 0.0: #for forward moving brake
+       #     print("stop motor")
+       #     motor_val = 1300
+       #     pi.set_servo_pulsewidth(motor_pin, motor_val)
+       #     pwm_output_msg.MotorPWM = motor_val
+       #     print("val 1:", motor_val)
+       #     time.sleep(0.5) #first signal need to repay previous value on engine
+       #     pi.set_servo_pulsewidth(motor_pin, middle_motor)
+       #     pwm_output_msg.MotorPWM = middle_motor
+       #     print("val 2:", motor_val)
+       #     time.sleep(0.5) #second to stop the car
 
         if use_imu_vel:
             # PID controlled
@@ -279,7 +280,7 @@ def set_rc_remote(mode):
         else:
             # use relative velocity
             if vel_msg.linear.x >= 0.0:
-                motor_val = valmap(vel_msg.linear.x, 0.0 , 1.0, middle_motor, 1700, False)
+                motor_val = valmap(vel_msg.linear.x, 0.0 , 1.0, middle_motor, 1600, False)
             if vel_msg.linear.x < 0.0:
                 motor_val = valmap(vel_msg.linear.x, -2.0, 0.0, 1300, middle_motor, False)
 #            print("send vel", motor_val)

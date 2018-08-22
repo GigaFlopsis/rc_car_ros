@@ -65,8 +65,8 @@ def trap_profile_linear_velocity(x, xy_des, v_max):
 #rotatin servo regulator
 def rot_controller(Erot,Erot_old,sumErot,dT):
     kp = 0.9
-    ki = 0.0229
-    kd = 0.00477
+    ki = 0.00258
+    kd = 0.00477 
     u_rot = kp * Erot + ki * sumErot + kd *(Erot-Erot_old) / dT
     return u_rot
 
@@ -123,8 +123,8 @@ def main():
     #constraints for lower and upper limits
     u_v_constraints = [min_vel,max_vel]
     u_alpha_constraints=[-max_angle,max_angle]
-    upper_limit_of_ki_sum=15.0
-    lower_limit_of_ki_sum=-15.0
+    upper_limit_of_ki_sum=2.0
+    lower_limit_of_ki_sum=-2.0
     #limit checker
     if u_v>u_v_constraints[1]:
         u_v = u_v_constraints[1]
@@ -150,6 +150,7 @@ def main():
     #output values of velocity and rotation
     vel_and_angle=[u_v,u_rot]
     cmd_vel_msg.linear.x=vel_and_angle[0]
+    #print(u_v)
     cmd_vel_msg.angular.z=vel_and_angle[1]
 
     return cmd_vel_msg
