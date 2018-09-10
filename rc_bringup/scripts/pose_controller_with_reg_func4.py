@@ -131,52 +131,61 @@ def get_distance_to(a,b):
     return dist
 
 def plan_virtual_fields():
-    global goal_pose, goal_topic, first_waypoint_in_route, Frep, nearest_point, dist_goal, Obs_xy, dt, i, nearest_point
+    global goal_pose, goal_topic, first_waypoint_in_route, Frep, nearest_point, dist_goal, Obs_xy, dt, i, nearest_point, finish_flag, dist
     coordinates_obstacles()
-    nearest_point = None
-    Frep=[0,0]
-    dist_goal = get_distance_to(current_pose, goal_pose)
-    k=2
-    goal_p=np.array([goal_pose.position.x,goal_pose.position.y])
-    current_p=np.array([current_pose.position.x,current_pose.position.y])
+    if (abs(dist) < goal_tolerance):
+        Ev=0
+        Ev_old=0
+        sumEv=0
+        Erot=0
+        Erot_old=0
+        sumErot=0
+        finish_flag=True
+    else:
+        nearest_point = None
+        Frep=[0,0]
+        dist_goal = get_distance_to(current_pose, goal_pose)
+        k=2
+        goal_p=np.array([goal_pose.position.x,goal_pose.position.y])
+        current_p=np.array([current_pose.position.x,current_pose.position.y])
    # print("goal_p =",goal_p)
-    Fatt=k*(goal_p-current_p)/dist_goal
+        Fatt=k*(goal_p-current_p)/dist_goal
    # print("Fatt", Fatt)
-    if len(Obs_xy)!=0:
-        min_d = float('inf')
-        for i in range(len(Obs_xy)):
-            d = math.sqrt((current_pose.position.x - Obs_xy[0][i]) ** 2 + (current_pose.position.y - Obs_xy[1][i]) ** 2)
-            if d < 1.5:
-                if min_d > d:
-                    min_d = d
-                    nearest_point = [Obs_xy[0][i],Obs_xy[1][i]]
-        c=2
-        if nearest_point != None:
+        if len(Obs_xy)!=0:
+            min_d = float('inf')
+            for i in range(len(Obs_xy)):
+                d = math.sqrt((current_pose.position.x - Obs_xy[0][i]) ** 2 + (current_pose.position.y - Obs_xy[1][i]) ** 2)
+                if d < 1.5:
+                    if min_d > d:
+                        min_d = d
+                        nearest_point = [Obs_xy[0][i],Obs_xy[1][i]]
+            c=2
+            if nearest_point != None:
             
-            print("min_d",min_d)
-            current_po=[current_pose.position.x,current_pose.position.y]
-            print("current_po= ",current_po)
-            print("nearest_point= ", nearest_point)
-            Frep_x=c*(current_po[0]-nearest_point[0])/min_d**2
-            Frep_y=c*(current_po[1]-nearest_point[1])/min_d**2
-            Frep=[Frep_x,Frep_y]
-            print("Frep =",Frep)
+                print("min_d",min_d)
+                current_po=[current_pose.position.x,current_pose.position.y]
+                print("current_po= ",current_po)
+                print("nearest_point= ", nearest_point)
+                Frep_x=c*(current_po[0]-nearest_point[0])/min_d**2
+                Frep_y=c*(current_po[1]-nearest_point[1])/min_d**2
+                Frep=[Frep_x,Frep_y]
+                print("Frep =",Frep)
             
-    r=10
+        r=10
    # print("Frep_x =",Frep[0])
    # print("Frep_y =",Frep[1])
    # print("Fatt =",Fatt)
    # print("current_x =", current_pose.position.x)
-    x_new=current_pose.position.x+(Fatt[0]+Frep[0])*dt*r
+        x_new=current_pose.position.x+(Fatt[0]+Frep[0])*dt*r
    # print("new_current_x",x_new)
-    y_new=current_pose.position.y+(Fatt[1]+Frep[1])*dt*r
+        y_new=current_pose.position.y+(Fatt[1]+Frep[1])*dt*r
    # print("new_current_x",y_new)
    # print("x_new", x_new)
    # print("y_new", y_new)
-    goal_pose.position.x=x_new
-    goal_pose.position.y=y_new
-    print("goal_pose",goal_pose)
-    return goal_pose
+        goal_pose.position.x=x_new
+        goal_pose.position.y=y_new
+        print("goal_pose",goal_pose)
+        return goal_pose 
 
 def coordinates_obstacles():
     global current_course, Obs_xy, lid_and_vec, lidar_arr, xn, yn, x_matrix, y_matrix, phi_new_vec, lid_ang_vec, phi_new_x, phi_new_y, lid_new_x, lid_new_y
