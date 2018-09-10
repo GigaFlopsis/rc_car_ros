@@ -9,7 +9,6 @@ import numpy as np
 import rospy
 import tf
 from geometry_msgs.msg import Twist, Pose, PoseStamped
-from sensor_msgs.msg import LaserScan
 from rc_bringup.cfg import PoseControllerConfig
 from dynamic_reconfigure.server import Server
 from pid_params_saver import YamlParams
@@ -20,7 +19,6 @@ cmd_vel_msg = Twist()
 current_pose = Pose()
 current_course = float()
 goal_pose = Pose()
-goal_pose_msg = Pose()
 
 init_flag = False
 max_vel = 1.1 # m/s
@@ -36,7 +34,7 @@ cmd_vel_topic = "/cmd_vel"
 vel_topic = "/mavros/local_position/velocity"
 goal_topic = "/goal"
 pose_topic = "/mavros/local_position/pose"
-lidar_topic = "/scan"
+
 #cfg_values
 pps = YamlParams()
 init_server = False
@@ -65,10 +63,6 @@ v=0.0
 sumErot=0
 sumEv=0
 distance=0
-Obs_xy=list()
-lid_and_vec=list()
-lidar_arr=list()
-nearest_point= list()
 
 #trap function for velocity
 def trap_profile_linear_velocity(x, xy_des, v_max): 
@@ -82,9 +76,9 @@ def trap_profile_linear_velocity(x, xy_des, v_max):
 #rotatin servo regulator
 def rot_controller(Erot,Erot_old,sumErot,dT):
     global kP_course, kI_course, kD_course
-    kP_course = 0.435 #0.9
-    kI_course = 0.0001 #0.00258
-    kD_course = 0.00001 #0.00477 
+    kP_course = 0.45 #0.9
+    kI_course = 0 #0.00258
+    kD_course = 0 #0.00477 
     u_rot = kP_course * Erot + kI_course * sumErot + kD_course *(Erot-Erot_old) / dT
     return u_rot
 
@@ -113,60 +107,19 @@ def get_distance_to(a,b):
     dist = np.linalg.norm(pos)
     return dist
 
-def plan_virtual_fields():
-    global goal_pose, goal_topic, first_waypoint_in_route, Frep, nearest_point, dist_goal, Obs_xy, dt, i, nearest_point
-    Frep = [0,0]
-    nearest_point = [math.inf, math.inf]
-    dist_goal = get_distance_to(current_pose, goal_pose)
-    k=2
-    Fatt=k*([goal_pose[1],goal_pose[2]]-[current_pose[1],current_pose[2]])/dist_goal
-    print("Fatt", Fatt)
-    if len(Obs_xy)==0:
-        min_d = math.inf
-        for i in range(len(Obs_xy)):
-            d = math.sqrt((current_pose[1] - Obs_xy[i][1]) ** 2 + (current_pose[2] - Obs_xy[i][2]) ** 2)
-            if d < 1.5:
-                if min_d > d:
-                    min_d = d
-                    nearest_point = [Obs_xy[i][1],Obs_xy[i][2]]
-        c=2
-        if nearest_point==math.inf:
-            Frep=c*(current_pose-nearest_point)/min_d**2
-    r=10
-    x_new=current_pose.position.x+(Fatt[1]+Frep[1])*dt*r
-    y_new=current_pose.position.y+(Fatt[2]+Frep[2])*dt*r
-    print("x_new", x_new)
-    print("y_new", y_new)
-    goal_pose = [x_new,y_new]
-    return goal_pose
-
-def coordinates_obstacles():
-    global current_course, Obs_xy, lid_and_vec, lidar_arr
-    alpha=math.radians(360)
-    step=math.radians(1)
-    lid_and_vec = lid_and_vec[-alpha/2:alpha/2:step]
-    phi_vec = np.ones(alpha/step+1,1)*current_course
-    yn.append(lidar_arr*math.sin(phi_vec-lid_and_vec)+current_pose.position.y)
-    xn.append(lidar_arr*math.cos(phi_vec-lid_ang_vec)+current_pose.position.x)
-    xn.delete[math.inf]
-    yn.delete[math.inf]
-    Obs_xy=[xn,yn]
-    print("Obs_xy",Obs_xy)
-
-
 def main():
     global dt, current_pose, current_course, goal_pose, cmd_vel_msg , u_v, u_rot, Ev, Erot,sumErot,sumEv, plot_x,plot_y, v_des, leinght_v,leinght_rot,v , finish_flag, goal_tolerance, dist, upper_limit_of_ki_sum, lower_limit_of_ki_sum, Ev_old, Erot_old
 
     dist=get_distance_to(current_pose, goal_pose)
     #car brake and PID reconfiguration to zero after destination point
     if (abs(dist) < goal_tolerance):
+        finish_flag = True
         Ev=0
         Ev_old=0
         sumEv=0
         Erot=0
         Erot_old=0
         sumErot=0
-        finish_flag=True
 
     v_des=trap_profile_linear_velocity(current_pose.position,goal_pose,max_vel)
     dx=(current_pose.position.x-plot_x[0])/dt
@@ -219,9 +172,7 @@ def main():
 def goal_clb(data):
     #Get goal pose
     global goal_pose, init_flag, finish_flag
-    if goal_pose!=0:
-        rospy.sleep(0)
-    goal_pose=data.pose
+    goal_pose = data.pose
     init_flag = True
     finish_flag = False
 
@@ -234,10 +185,6 @@ def current_pose_clb(data):
     # # convert euler from quaternion
     (roll, pitch, yaw) = tf.transformations.euler_from_quaternion(rot)
     current_course = yaw
-
-def laser_scan_clb(data):
-    global lidar_arr
-    lidar_arr=data.ranges
 
 def cfg_callback(config, level):
     global max_vel, min_vel, max_angle, init_server
@@ -293,7 +240,7 @@ def set_server_value(cfg_srv):
     kD_course = pps.params_get('kD_course')
 
 
-    cfg_srv.update_configuration({'max_vel': pps.params_get('max_vel'),
+   # cfg_srv.update_configuration({'max_vel': pps.params_get('max_vel'),
                                   'min_vel': pps.params_get('min_vel'),
                                   'max_angle': pps.params_get('max_angle'),
                                   'kP_pose': pps.params_get('kP_pose'),
@@ -302,7 +249,7 @@ def set_server_value(cfg_srv):
                                   'kP_course': pps.params_get('kP_course'),
                                   'kI_course': pps.params_get('kI_course'),
                                   'kD_course': pps.params_get('kD_course')})
-    pps.params_save()
+   # pps.params_save()
     print ("save from set server value")
 
 def callback(config):
@@ -359,7 +306,6 @@ if __name__ == "__main__":
     #rospy.Subscriber(vel_topic, TwistStamped, vel_clb)
     rospy.Subscriber(goal_topic, PoseStamped, goal_clb)
     rospy.Subscriber(pose_topic, PoseStamped, current_pose_clb)
-    rospy.Subscriber(lidar_topic, LaserScan, laser_scan_clb)
     vec_pub = rospy.Publisher(cmd_vel_topic, Twist,  queue_size=10)
 
     listener = tf.TransformListener()
@@ -381,7 +327,7 @@ if __name__ == "__main__":
 
             old_ros_time = rospy.get_time()
             cmd_vel_msg = main()
-            goal_pose_msg = plan_virtual_fields() 
+
             if finish_flag:
                 if currentTime > 1.0:
                     print("pose controller: finish_flag True")

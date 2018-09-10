@@ -87,7 +87,7 @@ pwm_msg = CarPwmContol()
 drive_msg = AckermannDriveStamped()
 pwm_output_msg = CarPwmContol()
 
-hz = 20
+hz = 50
 time_clb = 0.0
 
 def convert_trans_rot_vel_to_steering_angle(v, omega, wheelbase):

@@ -18,11 +18,12 @@
 	</node>
 
 	<!--pose controller -->	
-        <node pkg="rc_bringup" name="rc_pose_controller" type="pose_controller_with_reg_func3.py" respawn="true" output="screen">	
+
+        <node pkg="rc_bringup" name="rc_pose_controller" type="pose_controller_with_reg_func4.py" respawn="true" output="screen">	
                 <param name="vel_topic" value="velocity"/>
 		<!--param name="pose_topic" value="mavros/local_position/pose"/-->
 		<param name="pose_topic" value="pose"/>
-		<param name="goal_topic" value="goal"/>
+		<param name="goal_topic" value="route"/>    
 
 		<!--<param name="max_vel" value="0.9"/>
 		<param name="min_vel" value="-1"/>
@@ -37,6 +38,7 @@
 		<param name="kD_course" value="0.4"/>
 	</node>
 
-
+        <node pkg="rc_bringup" name="rc_route_generator" type="route_generation.py" respawn="true" output="screen"/>
+       
 
 </launch>
