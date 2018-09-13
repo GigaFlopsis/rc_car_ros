@@ -67,28 +67,6 @@ sumErot=0
 sumEv=0
 distance=0
 
-#Obs_xy=[list(),list()]
-Obs_xy=list()
-lid_and_vec=list()
-lid_ang_vec_new=list()
-phi_new_vec=list()
-phi_vec=list()
-lidar_arr=list()
-x_matrix=list()
-y_matrix=list()
-nearest_point= list()
-i=0
-j=0
-k=0
-Fatt=list()
-yn=list()
-xn=list()
-xn_new=list()
-yn_new=list()
-phi_new_x=list()
-lid_new_x=list()
-phi_new_y=list()
-lid_new_y=list()
 
 #trap function for velocity
 def trap_profile_linear_velocity(x, xy_des, v_max): 
@@ -132,65 +110,6 @@ def get_distance_to(a,b):
                     [b.position.y - a.position.y]])
     dist = np.linalg.norm(pos)
     return dist
-
-def plan_virtual_fields():
-    global goal_pose, goal_topic, first_waypoint_in_route, Frep, nearest_point, dist_goal, Obs_xy, dt, i, nearest_point, dist ,xn_new, yn_new
-    coordinates_obstacles()
-    goal_new=Pose()
-    #if (abs(dist) < goal_tolerance):
-    #    Ev=0
-    #    Ev_old=0
-    #    sumEv=0
-    #    Erot=0
-    #    Erot_old=0
-    #    sumErot=0
-    #    finish_flag=True
-    #else:
-    Frep=[0,0]
-    dist_goal = get_distance_to(current_pose, goal_pose)
-    k=2
-    goal_p=np.array([goal_pose.position.x,goal_pose.position.y])
-    current_p=np.array([current_pose.position.x,current_pose.position.y])
-
-    Fatt=k*(goal_p-current_p)/dist_goal
-    print("goal_p",goal_p)
-    print("current_p",current_p)
-    print("Fatt", len(Fatt))
-    print('xn_new_len',len(xn_new))
-    if len(xn_new)!=0:
-        nearest_point=None
-        min_d = np.inf
-        for i in range(len(xn_new)):
-            d = math.sqrt((current_pose.position.x - xn_new[i]) ** 2 + (current_pose.position.y - yn_new[i]) ** 2)
-                #print('min_d',min_d)
-                #print('d =',d)
-            if d < 1.5:
-                if min_d > d:
-                    min_d = d
-                    nearest_point = [-xn_new[i],-yn_new[i]]
-                    print("nearest_point",nearest_point)
-        c=0.01
-        if nearest_point!=None:
-            current_po=[current_pose.position.x,current_pose.position.y]
-            Frep_x=c*(current_po[0]-nearest_point[0])/min_d**2
-            Frep_y=c*(current_po[1]-nearest_point[1])/min_d**2
-            Frep=[Frep_x,Frep_y]
-
-
-    r=4
-    print("Frep =",len(Frep))
-    print("Frep =", Frep)
-    print("Fatt =", Fatt)
-
-    x_new=current_pose.position.x+(Fatt[0]+Frep[0])*dt*r
-    y_new=current_pose.position.y+(Fatt[1]+Frep[1])*dt*r
-
-    goal_new.position.x=x_new
-    goal_new.position.y=y_new
-    xn_new=list()
-    yn_new=list()
-    print("goal_pose",goal_new)
-    return goal_new
 
 def main():
     global dt, current_pose, current_course, goal_pose, cmd_vel_msg , u_v, u_rot, Ev, Erot,sumErot,sumEv, plot_x,plot_y, v_des, leinght_v,leinght_rot,v , finish_flag, goal_tolerance, dist, upper_limit_of_ki_sum, lower_limit_of_ki_sum, Ev_old, Erot_old
@@ -420,7 +339,6 @@ if __name__ == "__main__":
 
             old_ros_time = rospy.get_time()
             cmd_vel_msg = main()
-            #goal_pose_msg = plan_virtual_fields() 
             if finish_flag:
                 if currentTime > 1.0:
                     print("pose controller: finish_flag True")
