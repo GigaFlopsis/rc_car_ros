@@ -82,6 +82,8 @@ k=0
 Fatt=list()
 yn=list()
 xn=list()
+xn_new=list()
+yn_new=list()
 phi_new_x=list()
 lid_new_x=list()
 phi_new_y=list()
@@ -131,92 +133,118 @@ def get_distance_to(a,b):
     return dist
 
 def plan_virtual_fields():
-    global goal_pose, goal_topic, first_waypoint_in_route, Frep, nearest_point, dist_goal, Obs_xy, dt, i, nearest_point, finish_flag, dist
+    global goal_pose, goal_topic, first_waypoint_in_route, Frep, nearest_point, dist_goal, Obs_xy, dt, i, nearest_point, dist ,xn_new, yn_new
     coordinates_obstacles()
-    if (abs(dist) < goal_tolerance):
-        Ev=0
-        Ev_old=0
-        sumEv=0
-        Erot=0
-        Erot_old=0
-        sumErot=0
-        finish_flag=True
-    else:
-        nearest_point = None
-        Frep=[0,0]
-        dist_goal = get_distance_to(current_pose, goal_pose)
-        k=2
-        goal_p=np.array([goal_pose.position.x,goal_pose.position.y])
-        current_p=np.array([current_pose.position.x,current_pose.position.y])
-   # print("goal_p =",goal_p)
-        Fatt=k*(goal_p-current_p)/dist_goal
-   # print("Fatt", Fatt)
-        if len(Obs_xy)!=0:
-            min_d = float('inf')
-            for i in range(len(Obs_xy)):
-                d = math.sqrt((current_pose.position.x - Obs_xy[0][i]) ** 2 + (current_pose.position.y - Obs_xy[1][i]) ** 2)
-                if d < 1.5:
-                    if min_d > d:
-                        min_d = d
-                        nearest_point = [Obs_xy[0][i],Obs_xy[1][i]]
-            c=2
-            if nearest_point != None:
-            
-                print("min_d",min_d)
-                current_po=[current_pose.position.x,current_pose.position.y]
-                print("current_po= ",current_po)
-                print("nearest_point= ", nearest_point)
-                Frep_x=c*(current_po[0]-nearest_point[0])/min_d**2
-                Frep_y=c*(current_po[1]-nearest_point[1])/min_d**2
-                Frep=[Frep_x,Frep_y]
-                print("Frep =",Frep)
-            
-        r=10
-   # print("Frep_x =",Frep[0])
-   # print("Frep_y =",Frep[1])
-   # print("Fatt =",Fatt)
-   # print("current_x =", current_pose.position.x)
-        x_new=current_pose.position.x+(Fatt[0]+Frep[0])*dt*r
-   # print("new_current_x",x_new)
-        y_new=current_pose.position.y+(Fatt[1]+Frep[1])*dt*r
-   # print("new_current_x",y_new)
-   # print("x_new", x_new)
-   # print("y_new", y_new)
-        goal_pose.position.x=x_new
-        goal_pose.position.y=y_new
-        print("goal_pose",goal_pose)
-        return goal_pose 
+    #if (abs(dist) < goal_tolerance):
+    #    Ev=0
+    #    Ev_old=0
+    #    sumEv=0
+    #    Erot=0
+    #    Erot_old=0
+    #    sumErot=0
+    #    finish_flag=True
+    #else:
+    Frep=[0,0]
+    dist_goal = get_distance_to(current_pose, goal_pose)
+    k=2
+    goal_p=np.array([goal_pose.position.x,goal_pose.position.y])
+    current_p=np.array([current_pose.position.x,current_pose.position.y])
+
+    Fatt=k*(goal_p-current_p)/dist_goal
+    print("goal_p",goal_p)
+    print("current_p",current_p)
+    print("Fatt", len(Fatt))
+    print('xn_new_len',len(xn_new))
+    if len(xn_new)!=0:
+        print("AD MORTEN INIMIKUS")
+        nearest_point=None
+        min_d = np.inf
+        for i in range(len(xn_new)):
+            d = math.sqrt((current_pose.position.x - xn_new[i]) ** 2 + (current_pose.position.y - yn_new[i]) ** 2)
+                #print('min_d',min_d)
+                #print('d =',d)
+            if d < 1.5:
+                if min_d > d:
+                    min_d = d
+                    nearest_point = [xn_new[i],yn_new[i]]
+                    print("nearest_point",nearest_point)
+        c=0.05
+        if nearest_point!=None:
+            current_po=[current_pose.position.x,current_pose.position.y]
+            Frep_x=c*(current_po[0]-nearest_point[0])/min_d**2
+            Frep_y=c*(current_po[1]-nearest_point[1])/min_d**2
+            Frep=[Frep_x,Frep_y]
+                
+
+    r=3
+    print("Frep =",len(Frep))
+    print("Frep =", Frep)
+    print("Fatt =", Fatt)
+
+    x_new=current_pose.position.x+(Fatt[0]+Frep[0])*dt*r
+    y_new=current_pose.position.y+(Fatt[1]+Frep[1])*dt*r
+
+    goal_pose.position.x=x_new
+    goal_pose.position.y=y_new
+    xn_new=list()
+    yn_new=list()
+    print("goal_pose",goal_pose)
+    return goal_pose
 
 def coordinates_obstacles():
-    global current_course, Obs_xy, lid_and_vec, lidar_arr, xn, yn, x_matrix, y_matrix, phi_new_vec, lid_ang_vec, phi_new_x, phi_new_y, lid_new_x, lid_new_y
+    global current_course, Obs_xy, lid_and_vec, lidar_arr, xn, yn, x_matrix, y_matrix, phi_new_vec, lid_ang_vec, phi_new_x, phi_new_y, lid_new_x, lid_new_y #, x_new, y_new
     alpha=math.radians(360)
     step=math.radians(1)
-    lid = np.arange(-alpha/2,alpha/2,step)
+    lid = np.arange(-alpha/2,alpha/2+step,step)
+
+    print("len_lidar",len(lidar_arr))
+    print("lid_len",len(lid))
     lid_ang_vec =np.transpose(lid)
-    phi_vec_1 = np.ones((alpha/step,1))*current_course
+    phi_vec_1 = np.ones((alpha/step+1,1))*current_course
     phi_vec = np.transpose(phi_vec_1)
     phi_vec = phi_vec[0]
-    x_matrix=np.ones((360,1))*current_pose.position.x
-    y_matrix=np.ones((360,1))*current_pose.position.y
-    #print(x_matrix)
-    #print(y_matrix)
+    x_matrix=np.ones((361,1))*current_pose.position.x
+    y_matrix=np.ones((361,1))*current_pose.position.y
+    print("phi_vec",len(phi_vec))
+    print("lid_ang_vec",len(lid_ang_vec))
+    print("lidar_arr_len=",len(lidar_arr))
+    phi_new_x=list()
+    phi_new_y=list()
+    lid_new_x=list()
+    lid_new_y=list()
+    lidar_arr_new=list()
+    #print("lidar_arr =",lidar_arr)
+    for j in range(360):
+        lidar_arr_new.append(lidar_arr[j])
+        if len(lidar_arr_new)==360:
+            lidar_arr_new.append(lidar_arr_new[0])
+    print("len_lidar",len(lidar_arr_new))
+    #print("lidar 361 =",lidar_arr_new)
+
     for j in range(len(phi_vec)):
         phi_new_y.append(math.sin(phi_vec[j]-lid_ang_vec[j]))
         phi_new_x.append(math.cos(phi_vec[j]-lid_ang_vec[j]))
-        lid_new_x.append(lidar_arr[j]*phi_new_x[j])
-        lid_new_y.append(lidar_arr[j]*phi_new_y[j])
-    #print("phi_new_x", phi_new_x)
-    #print("phi_new_y", phi_new_y)
-    #print("lid_new_x", lid_new_y)
-    #print("lid_new_y", lid_new_y)
-    for k in range(len(phi_vec)):
-        lid_new_x.append(lidar_arr[k]*phi_new_x[k])
-        lid_new_y.append(lidar_arr[k]*phi_new_y[k])
+
+        lid_new_x.append(lidar_arr_new[j]*phi_new_x[j])
+        lid_new_y.append(lidar_arr_new[j]*phi_new_y[j])
+
+    print('Phi_new_vec_x',len(phi_new_x))
+    print('Phi_new_vec_y',len(phi_new_y))
+
     yn = lid_new_y + y_matrix[0]
     xn = lid_new_x + x_matrix[0]
-
-    Obs_xy = [xn,yn]
-   # print("Obs_xy" ,Obs_xy[0][])
+    #xn_new=list()
+    #yn_new=list()
+    for i in range(len(xn)):
+        if not np.isinf(xn[i]) and not np.isinf(yn[i]):
+            xn_new.append(xn[i])
+            yn_new.append(yn[i])
+    print("xn =",len(xn_new))
+    print("yn =",len(yn_new))
+   # Obs_xy=[xn_new,yn_new]
+    print(Obs_xy)
+    #print("Obs_x",len(Obs_xy[0]))
+   # print("Obs_y",len(Obs_xy[1]))
 
 def main():
     global dt, current_pose, current_course, goal_pose, cmd_vel_msg , u_v, u_rot, Ev, Erot,sumErot,sumEv, plot_x,plot_y, v_des, leinght_v,leinght_rot,v , finish_flag, goal_tolerance, dist, upper_limit_of_ki_sum, lower_limit_of_ki_sum, Ev_old, Erot_old
