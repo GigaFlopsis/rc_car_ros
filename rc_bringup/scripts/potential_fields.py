@@ -55,6 +55,8 @@ lid_new_x=list()
 phi_new_y=list()
 lid_new_y=list()
 
+step_1=1
+goal_pose_des=Pose()
 #get distance to goal
 def get_distance_to(a,b):
     """
@@ -73,7 +75,10 @@ def get_distance_to(a,b):
     return dist
 
 def plan_virtual_fields():
-    global goal_pose, goal_topic, first_waypoint_in_route, Frep, nearest_point, dist_goal, Obs_xy, dt, i, nearest_point, dist ,xn_new, yn_new, current_pose
+    global goal_pose, goal_topic, first_waypoint_in_route, Frep, nearest_point, dist_goal, Obs_xy, dt, i, nearest_point, dist ,xn_new, yn_new, current_pose, goal_pose_des, step_1
+    if step_1==1 and get_distance_to(current_pose,goal_pose)>0.3:
+        goal_pose_des=goal_pose
+        step_1=step_1+1
     coordinates_obstacles()
     goal_new=Pose()
     #if (abs(dist) < goal_tolerance):
@@ -92,6 +97,8 @@ def plan_virtual_fields():
     current_p=np.array([current_pose.position.x,current_pose.position.y])
 
     Fatt=k*(goal_p-current_p)/dist_goal
+    print("goal_pose_des",goal_pose_des)
+    print("step_1",step_1)
     print("goal_p",goal_p)
     print("current_p",current_p)
     print("Fatt", len(Fatt))
@@ -120,16 +127,16 @@ def plan_virtual_fields():
     print("Frep =",len(Frep))
     print("Frep =", Frep)
     print("Fatt =", Fatt)
-
+    
     x_new=current_pose.position.x+(Fatt[0]+Frep[0])*dt*r
     y_new=current_pose.position.y+(Fatt[1]+Frep[1])*dt*r
 
-    goal_pose.position.x=x_new
-    goal_pose.position.y=y_new
+    goal_new.position.x=x_new
+    goal_new.position.y=y_new
     xn_new=list()
     yn_new=list()
-    print("goal_pose",goal_pose)
-    return goal_pose
+    print("goal_new",goal_new)
+    return goal_new
 
 def coordinates_obstacles():
     global current_course, Obs_xy, lid_and_vec, lidar_arr, xn, yn, x_matrix, y_matrix, phi_new_vec, lid_ang_vec, phi_new_x, phi_new_y, lid_new_x, lid_new_y #, x_new, y_new
@@ -188,12 +195,17 @@ def coordinates_obstacles():
 
 def goal_clb(data):
     #Get goal pose
-    global goal_pose, init_flag, finish_flag
+    global goal_pose, init_flag, finish_flag, step_1, goal_pose_des, step_1
     if goal_pose!=0:
         rospy.sleep(0)
     goal_pose=data.pose
     init_flag = True
     finish_flag = False
+
+  #  if step_1==1:
+ #       goal_pose_des=data.pose
+#        step_1=step_1+1
+    #print("goal_pose",data.pose)
 
 def current_pose_clb(data):
     #Get current pose from topic
@@ -219,7 +231,7 @@ if __name__ == "__main__":
         goal_topic = rospy.get_param('~goal_topic', goal_topic)
     if rospy.has_param('~pose_topic'):
         pose_topic = rospy.get_param('~pose_topic', pose_topic)
-
+    print(step_1)
     # start subscriber
     #rospy.Subscriber(vel_topic, TwistStamped, vel_clb)
     rospy.Subscriber(goal_topic, PoseStamped, goal_clb)

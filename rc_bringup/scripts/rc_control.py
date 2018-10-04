@@ -282,7 +282,7 @@ def set_rc_remote(mode):
             if vel_msg.linear.x >= 0.0:
                 motor_val = valmap(vel_msg.linear.x, 0.0 , 1.0, middle_motor, 1600, False)
             if vel_msg.linear.x < 0.0:
-                motor_val = valmap(vel_msg.linear.x, -2.0, 0.0, 1300, middle_motor, False)
+                motor_val = valmap(vel_msg.linear.x, -2.0, 0.0, 1500, middle_motor, False) #1400
 #            print("send vel", motor_val)
 
         # Send to pwm motor

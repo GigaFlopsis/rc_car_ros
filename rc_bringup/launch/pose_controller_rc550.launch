@@ -23,11 +23,11 @@
 
 	<!--pose controller -->	
 
-        <node pkg="rc_bringup" name="rc_pose_controller" type="pose_controller_with_reg_func5.py" respawn="true">	
+        <node pkg="rc_bringup" name="rc_pose_controller" type="pose_controller_with_reg_func4_5.py" respawn="true" output="screen">	
                 <param name="vel_topic" value="velocity"/>
 		<!--param name="pose_topic" value="mavros/local_position/pose"/-->
 		<param name="pose_topic" value="pose"/>
-		<param name="goal_topic" value="route"/>
+		<param name="goal_topic" value="goal"/>
                 <param name="local_goal_topic" value="local_goal"/>    
 
 		<!--<param name="max_vel" value="0.9"/>
@@ -42,11 +42,10 @@
 		<param name="kI_course" value="0.0"/>
 		<param name="kD_course" value="0.4"/>
 	</node>
-
-        <node pkg="rc_bringup" name="rc_route_generator" type="route_generation.py" respawn="true"/>
+       <!--
+        <node pkg="rc_bringup" name="rc_route_generator" type="route_generation.py" respawn="true"/> -->
         
-        <node pkg="rc_bringup" name="rc_potential_fields" type="potential_fields.py" respawn="true" output="screen"/>
-
-       
+      <!--  <node pkg="rc_bringup" name="rc_pot_fields" type="pose_controller_with_reg_func4_5_dif_coeff.py" respawn="true" output="screen"/>
+      -->
 
 </launch>
