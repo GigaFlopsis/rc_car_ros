@@ -94,6 +94,7 @@ range_dia=None
 goal_new_p=list()
 step_1=1
 range_arr=list()
+range_data=list()
 
 aproximation_point=None
 
@@ -186,18 +187,20 @@ def coordinates_obstacles():
     #yn_new=list()
     for i in range(len(xn)):
         if not np.isinf(xn[i]) and not np.isinf(yn[i]):
-            xn_new.append(xn[i])
-            yn_new.append(yn[i])
+            xn_new.append(-xn[i])
+            yn_new.append(-yn[i])
+    for i in range(len(xn_new)):
+        range_data.append(math.sqrt((xn_new-current_pose.x)**2+(yn_new-current_pose.y)**2))
     print("xn =",len(xn_new))
     print("yn =",len(yn_new))
-   # Obs_xy=[xn_new,yn_new]
-    print(Obs_xy)
-    #print("Obs_x",len(Obs_xy[0]))
-   # print("Obs_y",len(Obs_xy[1]))
+    Obs_xy=[xn_new,yn_new]
+    #print(Obs_xy)
+    print("Obs_x-------------------------------------------",Obs_xy[0])
+    print("Obs_y-------------------------------------------",Obs_xy[1])
 
 
 def plan_virtual_fields():
-    global goal_pose, goal_topic, first_waypoint_in_route, Frep, nearest_point, dist_goal, Obs_xy, dt, i, nearest_point, dist ,xn_new, yn_new, step_1, goal_new_p, Ev, Ev_old, sumEv, Erot, Erot_old, sumErot, finish_flag, range_dia, aproximation_point, lidar_arr_new
+    global goal_pose, goal_topic, first_waypoint_in_route, Frep, nearest_point, dist_goal, Obs_xy, dt, i, nearest_point, dist ,xn_new, yn_new, step_1, goal_new_p, Ev, Ev_old, sumEv, Erot, Erot_old, sumErot, finish_flag, range_dia, aproximation_point, lidar_arr_new, range_data
 
     coordinates_obstacles()
     if get_distance_to(current_pose,goal_pose)>0.2 and step_1==1:
@@ -234,14 +237,14 @@ def plan_virtual_fields():
         nearest_point=None
         min_d = np.inf
         #index_of_min=lidar_arr_new.index(min(lidar_arr_new))
-        for i in range(len(xn_new)):
+        #for i in range(len(xn_new))
             d = math.sqrt((current_pose.position.x - xn_new[i]) ** 2 + (current_pose.position.y - yn_new[i]) ** 2)
             #print('min_d',min_d)
             #print('d =',d)
             if d < 1.5:
                 if min_d > d:
                     min_d = d
-                    nearest_point = [-xn_new[i],-yn_new[i]]
+                    nearest_point = [xn_new[i],yn_new[i]]
         #            if aproximation_point!=None: 
         #                range_dia=math.sqrt((aproximation_point[0]-nearest_point[0])**2+(aproximation_point[1]-nearest_point[1])**2)
         #                if range_dia<0.03:
@@ -269,7 +272,7 @@ def plan_virtual_fields():
     goal_pose.position.y=y_new
     xn_new=list()
     yn_new=list()
-    range_arr=list()
+    range_data=list()
 
     #if (abs(dist) < goal_tolerance):
     #    Ev=0
@@ -285,7 +288,8 @@ def plan_virtual_fields():
     return goal_pose
 
 def main():
-    global dt, current_pose, current_course, goal_pose, cmd_vel_msg , u_v, u_rot, Ev, Erot,sumErot,sumEv, plot_x,plot_y, v_des, leinght_v,leinght_rot,v , finish_flag, goal_tolerance, dist, upper_limit_of_ki_sum, lower_limit_of_ki_sum, Ev_old, Erot_old, goal_new_p
+    global dt, current_pose, current_course, goal_pose, cmd_vel_msg , u_v, u_rot, Ev, Erot,sumErot,sumEv, plot_x,plot_y, v_des, leinght_v,leinght_rot,v , finish_flag, goal_tolerance, dist, upper_limit_of_ki_sum, lower_limit_of_ki_sum, Ev_old, Erot_old, goal_new_p, mit_of_ki_sum, lower_limit_of_ki_sum, Ev_old, Erot_old, goal_new_p
+
     print("current_pose",current_pose)
     print("goal_pose",goal_pose)
     #dist=np.sqrt((goal_new_p[0]-current_pose.position.x)**2+(goal_new_p[1]-current_pose.position.y)**2)
@@ -521,7 +525,3 @@ if __name__ == "__main__":
 
     except KeyboardInterrupt:   # if put ctr+c
         exit(0)
-
-
-
-

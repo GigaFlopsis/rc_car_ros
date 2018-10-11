@@ -20,10 +20,13 @@
         <param name="revers_servo" value="False"/>
 	</node>
 
+       
+        <!--<node pkg="rc_bringup" name="laser2PointCloud" type="laser2pc.py" respawn="true" output="screen"/> -->
+	<!--<node pkg="rc_bringup" name="to_point_cloud" type="to_point_cloud.py" respawn="true" output="screen"/> -->
 
-	<!--pose controller -->	
-
-        <node pkg="rc_bringup" name="rc_pose_controller" type="pose_controller_with_reg_func4_5.py" respawn="true" output="screen">	
+        <!--pose controller -->	
+        <node pkg="rc_bringup" name="rc_pose_controller" type="pose_controller_with_reg_func4_5_dif_coeff.py" respawn="true" output="screen">
+        <!--<node pkg="rc_bringup" name="rc_pose_controller" type="pose_controller_with_reg_func4_5.py" respawn="true" output="screen"> -->	
                 <param name="vel_topic" value="velocity"/>
 		<!--param name="pose_topic" value="mavros/local_position/pose"/-->
 		<param name="pose_topic" value="pose"/>
