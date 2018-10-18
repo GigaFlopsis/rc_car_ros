@@ -41,6 +41,7 @@ dist=0.0
 cmd_vel_topic = "/cmd_vel"
 vel_topic = "/mavros/local_position/velocity"
 goal_topic = "/goal"
+local_goal_topic = "/local_goal"
 pose_topic = "/mavros/local_position/pose"
 lidar_topic = "/scan"
 point_cloud2_topic="/laserPointCLoud"
@@ -124,9 +125,9 @@ def trap_profile_linear_velocity(x, xy_des, v_max):
 #rotatin servo regulator
 def rot_controller(Erot,Erot_old,sumErot,dT):
     global kP_course, kI_course, kD_course
-    kP_course = 0.5 #0.435
-    kI_course = 0.001 #0.003
-    kD_course = 0.0001 #0.00001 
+    kP_course = 0.435 #0.9
+    kI_course = 0.0001 #0.00258
+    kD_course = 0.00001 #0.00477 
     u_rot = kP_course * Erot + kI_course * sumErot + kD_course *(Erot-Erot_old) / dT
     return u_rot
 
@@ -135,7 +136,7 @@ def velocity_controller(Ev, Ev_old,sumEv, dT):
     global kP_pose, kI_pose, kD_pose
     kP_pose = 0.1
     kI_pose= 0.87
-    kD_pose= 0.0001
+    kD_pose= 0.001
     u_v = kP_pose * Ev + kI_pose * sumEv + kD_pose *(Ev-Ev_old) / dT
     return u_v
 
@@ -157,16 +158,18 @@ def get_distance_to(a,b):
 
 
 def coordinates_obstacles():
-    global current_course, Obs_xy, lid_and_vec, lidar_arr, xn, yn, x_matrix, y_matrix, phi_new_vec, lid_ang_vec, phi_new_x, phi_new_y, lid_new_x, lid_new_y, lidar_arr_new, distance #, x_new, y_new
+    global current_course, Obs_xy, lid_and_vec, lidar_arr, xn, yn, x_matrix, y_matrix, phi_new_vec, lid_ang_vec, phi_new_x, phi_new_y, lid_new_x, lid_new_y, lidar_arr_new, distance, cloud_of_np_global,d #, x_new, y_new
     alpha=math.radians(360)
     step=math.radians(1)
     lid = np.arange(-alpha/2,alpha/2+step,step)
-
+ 
     print("len_lidar",len(lidar_arr))
     print("lid_len",len(lid))
     lid_ang_vec =np.transpose(lid)
     print("lid_ang_vec",len(lid_ang_vec))
-
+    cloud_of_nearest_points=list()
+    cloud_rotated=list()
+    cloud_of_np_global=list()
     phi_new_x=list()
     phi_new_y=list()
     lid_new_x=list()
@@ -197,21 +200,31 @@ def coordinates_obstacles():
     print("yn =",len(yn_new))
     for i in range(len(xn_new)):
         distance.append(math.sqrt((xn_new[i])**2+(yn_new[i])**2))
+        if distance[i]<1.5:
+            cloud_of_nearest_points.append(np.array([[xn_new[i]],[yn_new[i]]]))
     min_i =  distance.index(min(distance))
+    d=distance[min_i]
     rotate=np.array([[math.cos(current_course),-math.sin(current_course)],
                      [math.sin(current_course),math.cos(current_course)]])
-    nearest_point=np.array([[xn_new[min_i]],
-                       [yn_new[min_i]]])
-    nearest_p_in_global=np.dot(rotate,nearest_point)
-    x=nearest_p_in_global[0]+current_pose.position.x
-    y=nearest_p_in_global[1]+current_pose.position.y
-    Obs_xy=[x,y]
-    print(Obs_xy)
+    
+    for i in range(len(cloud_of_nearest_points)):
+        cloud_rotated.append(np.dot(rotate,cloud_of_nearest_points[i]))
+    
+    for i in range(len(cloud_rotated)):
+        cloud_of_np_global.append(np.array([[cloud_rotated[i][0]+current_pose.position.x],[cloud_rotated[i][1]+current_pose.position.y]]))
+    print('cloud_of_np_global',cloud_of_np_global)
+    #nearest_p_in_global=np.dot(rotate,nearest_point)
+    #x=nearest_p_in_global[0]+current_pose.position.x
+    #y=nearest_p_in_global[1]+current_pose.position.y
+    #x=cloud_of_np_global[0][0]
+    #y=cloud_of_np_global[0][1]
+    #Obs_xy=[x,y]
+    #print("Obs_xy",Obs_xy)
 
 
 
 def plan_virtual_fields():
-    global goal_pose, goal_topic,current_pose, first_waypoint_in_route, Frep, nearest_point, dist_goal, Obs_xy, dt, i, nearest_point, dist ,xn_new, yn_new, step_1, goal_new_p, Ev, Ev_old, sumEv, Erot, Erot_old, sumErot, finish_flag, range_dia, aproximation_point, lidar_arr_new, distance, point_cloud, Obs_xy
+    global goal_pose, goal_topic,current_pose, first_waypoint_in_route, Frep, nearest_point, dist_goal, Obs_xy, dt, i, nearest_point, dist ,xn_new, yn_new, step_1, goal_new_p, Ev, Ev_old, sumEv, Erot, Erot_old, sumErot, finish_flag, range_dia, aproximation_point, lidar_arr_new, distance, point_cloud, Obs_xy, cloud_of_np_global,d
     
     coordinates_obstacles()
     if get_distance_to(current_pose,goal_pose)>0.2 and step_1==1:
@@ -246,20 +259,28 @@ def plan_virtual_fields():
     print('xn_new_len',len(xn_new))
     if len(xn_new)!=0:
         nearest_point=None
+        Frep_x_prev=0
+        Frep_y_prev=0
+        Frep_xn=0
+        Frep_yn=0
         min_d = np.inf
-        d = math.sqrt((current_pose.position.x - Obs_xy[0]) ** 2 + (current_pose.position.y - Obs_xy[1]) ** 2)
+        #d = math.sqrt((current_pose.position.x - Obs_xy[0]) ** 2 + (current_pose.position.y - Obs_xy[1]) ** 2)
         if d < 1.5:
-            if (abs(current_course-(math.atan2(Obs_xy[1]-current_pose.position.y,Obs_xy[0]-current_pose.position.x))))<math.pi/2:
-                if min_d > d:
-                    min_d = d
-                    nearest_point = [Obs_xy[0],Obs_xy[1]]
+            if min_d > d:
+                min_d = d
+                nearest_point =1
                    
-                c=3 #0.01 10
-                if nearest_point!=None:
-                    current_po=[current_pose.position.x,current_pose.position.y]
-                    Frep_x=c*(current_po[0]-nearest_point[0])/min_d**2
-                    Frep_y=c*(current_po[1]-nearest_point[1])/min_d**2
-                Frep=[Frep_x,Frep_y]
+        c=2 #0.01 10
+        if nearest_point!=None:
+            current_po=[current_pose.position.x,current_pose.position.y]
+            for i in range(len(cloud_of_np_global)):
+                Frep_xn = (current_po[0]-cloud_of_np_global[i][0])+Frep_x_prev
+                Frep_yn = (current_po[1]-cloud_of_np_global[1][1])+Frep_y_prev
+                Frep_x_prev = Frep_xn
+                Frep_y_prev = Frep_yn
+        Frep_x = (c*(Frep_xn)/min_d**2)
+        Frep_y = (c*(Frep_yn)/min_d**2)
+        Frep=[Frep_x,Frep_y]
 
     r=1
     print("nearest_point",nearest_point)
@@ -485,7 +506,7 @@ if __name__ == "__main__":
     rospy.Subscriber(lidar_topic, LaserScan, laser_scan_clb)
 
     vec_pub = rospy.Publisher(cmd_vel_topic, Twist,  queue_size=10)
-    #new_goal_pub = rospy.Publisher(goal_topic, Pose, queue_size=10)
+    new_goal_pub = rospy.Publisher(goal_topic, Pose, queue_size=10)
 
     listener = tf.TransformListener()
     old_ros_time = rospy.get_time()
@@ -507,7 +528,7 @@ if __name__ == "__main__":
             old_ros_time = rospy.get_time()
 
             cmd_vel_msg = main()
-           # goal_pose_msg = plan_virtual_fields()
+            goal_pose_msg = plan_virtual_fields()
             step_1=step_1+1 
             if finish_flag:
                 if currentTime > 1.0:
@@ -517,7 +538,7 @@ if __name__ == "__main__":
                 init_flag = False
 
             vec_pub.publish(cmd_vel_msg)
-            #new_goal_pub.publish(goal_pose_msg) # publish msgs to the robot
+            new_goal_pub.publish(goal_pose_msg) # publish msgs to the robot
             rate.sleep()
 
     except KeyboardInterrupt:   # if put ctr+c
