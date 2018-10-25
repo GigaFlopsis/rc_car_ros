@@ -8,8 +8,12 @@ import math
 import numpy as np
 import rospy
 import tf
+import tf2_ros
+import sensor_msgs.point_cloud2 as pc2
+import laser_geometry.laser_geometry as lg
+from tf2_sensor_msgs.tf2_sensor_msgs import do_transform_cloud
 from geometry_msgs.msg import Twist, Pose, PoseStamped
-from sensor_msgs.msg import LaserScan
+from sensor_msgs.msg import PointCloud2, LaserScan
 from rc_bringup.cfg import PoseControllerConfig
 from dynamic_reconfigure.server import Server
 from pid_params_saver import YamlParams
@@ -19,8 +23,10 @@ velocity = float()
 cmd_vel_msg = Twist()
 current_pose = Pose()
 current_course = float()
+
 goal_pose = Pose()
 goal_pose_msg = Pose()
+goal_new=Pose()
 
 init_flag = False
 max_vel = 1.1 # m/s
@@ -28,7 +34,7 @@ min_vel = -1.5 # m/s
 max_angle = 25
 
 finish_flag = True
-goal_tolerance = 0.2
+goal_tolerance = 0.5
 dist=0.0
 
 #topics
@@ -37,9 +43,21 @@ vel_topic = "/mavros/local_position/velocity"
 goal_topic = "/goal"
 pose_topic = "/mavros/local_position/pose"
 lidar_topic = "/scan"
+point_cloud2_topic="/laserPointCLoud"
+
+target_frame='odom'
+source_frame='map'
+
 #cfg_values
 pps = YamlParams()
 init_server = False
+
+#PointCloud
+max_dist_lidar=1.5
+sonar_data = list()
+#point_cloud = PointCloud2()
+pc_msg = PointCloud2()
+lp = lg.LaserProjection()
 
 #PID
 kP_pose=float
@@ -64,12 +82,36 @@ plot_y=[0]
 v=0.0
 sumErot=0
 sumEv=0
-distance=0
+distance=list()
+
+#obs_xy=[list(),list()]
 Obs_xy=list()
 lid_and_vec=list()
+lid_ang_vec_new=list()
+phi_new_vec=list()
+phi_vec=list()
 lidar_arr=list()
+x_matrix=list()
+y_matrix=list()
 nearest_point= list()
+i=0
+j=0
+k=0
+Fatt=list()
+yn=list()
+xn=list()
+xn_new=list()
+yn_new=list()
+phi_new_x=list()
+lid_new_x=list()
+phi_new_y=list()
+lid_new_y=list()
+range_dia=None
+goal_new_p=list()
+step_1=1
 
+aproximation_point=None
+point_cloud2=PointCloud2()
 #trap function for velocity
 def trap_profile_linear_velocity(x, xy_des, v_max): 
     d = np.sqrt((x.x - xy_des.position.x) ** 2 + (x.y - xy_des.position.y) ** 2)
@@ -82,21 +124,21 @@ def trap_profile_linear_velocity(x, xy_des, v_max):
 #rotatin servo regulator
 def rot_controller(Erot,Erot_old,sumErot,dT):
     global kP_course, kI_course, kD_course
-    kP_course = 0.435 #0.9
-    kI_course = 0.0001 #0.00258
-    kD_course = 0.00001 #0.00477 
+    kP_course = 0.5 #0.435
+    kI_course = 0.001 #0.003
+    kD_course = 0.0001 #0.00001 
     u_rot = kP_course * Erot + kI_course * sumErot + kD_course *(Erot-Erot_old) / dT
     return u_rot
 
 #velocity motor regulator
 def velocity_controller(Ev, Ev_old,sumEv, dT):
     global kP_pose, kI_pose, kD_pose
-    kP_pose = 0.1
-    kI_pose= 0.87
+    kP_pose = 0.1 #0.1
+    kI_pose= 0.87 #0.87
     kD_pose= 0.001
     u_v = kP_pose * Ev + kI_pose * sumEv + kD_pose *(Ev-Ev_old) / dT
     return u_v
-#get distance to goal
+
 def get_distance_to(a,b):
     """
     get distance to goal point
@@ -113,52 +155,72 @@ def get_distance_to(a,b):
     dist = np.linalg.norm(pos)
     return dist
 
-def plan_virtual_fields():
-    global goal_pose, goal_topic, first_waypoint_in_route, Frep, nearest_point, dist_goal, Obs_xy, dt, i, nearest_point
-    Frep = [0,0]
-    nearest_point = [math.inf, math.inf]
-    dist_goal = get_distance_to(current_pose, goal_pose)
-    k=2
-    Fatt=k*([goal_pose[1],goal_pose[2]]-[current_pose[1],current_pose[2]])/dist_goal
-    print("Fatt", Fatt)
-    if len(Obs_xy)==0:
-        min_d = math.inf
-        for i in range(len(Obs_xy)):
-            d = math.sqrt((current_pose[1] - Obs_xy[i][1]) ** 2 + (current_pose[2] - Obs_xy[i][2]) ** 2)
-            if d < 1.5:
-                if min_d > d:
-                    min_d = d
-                    nearest_point = [Obs_xy[i][1],Obs_xy[i][2]]
-        c=2
-        if nearest_point==math.inf:
-            Frep=c*(current_pose-nearest_point)/min_d**2
-    r=10
-    x_new=current_pose.position.x+(Fatt[1]+Frep[1])*dt*r
-    y_new=current_pose.position.y+(Fatt[2]+Frep[2])*dt*r
-    print("x_new", x_new)
-    print("y_new", y_new)
-    goal_pose = [x_new,y_new]
-    return goal_pose
 
 def coordinates_obstacles():
-    global current_course, Obs_xy, lid_and_vec, lidar_arr
+    global current_course, Obs_xy, lid_and_vec, lidar_arr, xn, yn, x_matrix, y_matrix, phi_new_vec, lid_ang_vec, phi_new_x, phi_new_y, lid_new_x, lid_new_y, lidar_arr_new, distance #, x_new, y_new
     alpha=math.radians(360)
     step=math.radians(1)
-    lid_and_vec = lid_and_vec[-alpha/2:alpha/2:step]
-    phi_vec = np.ones(alpha/step+1,1)*current_course
-    yn.append(lidar_arr*math.sin(phi_vec-lid_and_vec)+current_pose.position.y)
-    xn.append(lidar_arr*math.cos(phi_vec-lid_ang_vec)+current_pose.position.x)
-    xn.delete[math.inf]
-    yn.delete[math.inf]
-    Obs_xy=[xn,yn]
-    print("Obs_xy",Obs_xy)
+    lid = np.arange(-alpha/2,alpha/2+step,step)
+
+    print("len_lidar",len(lidar_arr))
+    print("lid_len",len(lid))
+    lid_ang_vec =np.transpose(lid)
+    print("lid_ang_vec",len(lid_ang_vec))
+
+    phi_new_x=list()
+    phi_new_y=list()
+    lid_new_x=list()
+    lid_new_y=list()
+    lidar_arr_new=list()
+    for j in range(360):
+        lidar_arr_new.append(lidar_arr[j])
+        if len(lidar_arr_new)==360:
+            lidar_arr_new.append(lidar_arr_new[0])
+    print("len_lidar",len(lidar_arr_new))
+    for j in range(len(lid_ang_vec)):
+        phi_new_y.append(math.sin(lid_ang_vec[j])) #-phi_vec[j]))
+        phi_new_x.append(math.cos(lid_ang_vec[j])) #-phi_vec[j]))
+
+        lid_new_x.append(lidar_arr_new[j]*phi_new_x[j])
+        lid_new_y.append(lidar_arr_new[j]*phi_new_y[j])
+
+    print('Phi_new_vec_x',len(phi_new_x))
+    print('Phi_new_vec_y',len(phi_new_y))
+
+    yn = lid_new_y
+    xn = lid_new_x 
+    for i in range(len(xn)):
+        if not np.isinf(xn[i]) and not np.isinf(yn[i]):
+            xn_new.append(-xn[i])
+            yn_new.append(-yn[i])
+    print("xn =",len(xn_new))
+    print("yn =",len(yn_new))
+    for i in range(len(xn_new)):
+        distance.append(math.sqrt((xn_new[i])**2+(yn_new[i])**2))
+    min_i =  distance.index(min(distance))
+    rotate=np.array([[math.cos(current_course),-math.sin(current_course)],
+                     [math.sin(current_course),math.cos(current_course)]])
+    nearest_point=np.array([[xn_new[min_i]],
+                       [yn_new[min_i]]])
+    nearest_p_in_global=np.dot(rotate,nearest_point)
+    x=nearest_p_in_global[0]+current_pose.position.x
+    y=nearest_p_in_global[1]+current_pose.position.y
+    Obs_xy=[x,y]
+    print(Obs_xy)
 
 
-def main():
-    global dt, current_pose, current_course, goal_pose, cmd_vel_msg , u_v, u_rot, Ev, Erot,sumErot,sumEv, plot_x,plot_y, v_des, leinght_v,leinght_rot,v , finish_flag, goal_tolerance, dist, upper_limit_of_ki_sum, lower_limit_of_ki_sum, Ev_old, Erot_old
 
-    dist=get_distance_to(current_pose, goal_pose)
-    #car brake and PID reconfiguration to zero after destination point
+def plan_virtual_fields():
+    global goal_pose, goal_topic,current_pose, first_waypoint_in_route, Frep, nearest_point, dist_goal, Obs_xy, dt, i, nearest_point, dist ,xn_new, yn_new, step_1, goal_new_p, Ev, Ev_old, sumEv, Erot, Erot_old, sumErot, finish_flag, range_dia, aproximation_point, lidar_arr_new, distance, point_cloud, Obs_xy
+    
+    coordinates_obstacles()
+    if get_distance_to(current_pose,goal_pose)>0.2 and step_1==1:
+        if len(goal_new_p)<2:
+            goal_new_p.append(goal_pose.position.x)
+            goal_new_p.append(goal_pose.position.y)
+    dist=np.sqrt((goal_new_p[0]-current_pose.position.x)**2+(goal_new_p[1]-current_pose.position.y)**2)
+    print("dist= ",dist)
+
     if (abs(dist) < goal_tolerance):
         Ev=0
         Ev_old=0
@@ -167,21 +229,73 @@ def main():
         Erot_old=0
         sumErot=0
         finish_flag=True
+    #else:
+    print("step_1",step_1)
+    print("goal_new_p",goal_new_p)
+    Frep=[0,0]
+    dist_goal = get_distance_to(current_pose, goal_pose)
+    k=2
 
+    goal_p=np.array([goal_pose.position.x,goal_pose.position.y])
+    current_p=np.array([current_pose.position.x,current_pose.position.y])
+
+    Fatt=k*(goal_new_p-current_p)/dist_goal #goal_p
+    print("goal_p",goal_p)
+    print("current_p",current_p)
+    print("Fatt", len(Fatt))
+    print('xn_new_len',len(xn_new))
+    if len(xn_new)!=0:
+        nearest_point=None
+        min_d = np.inf
+        d = math.sqrt((current_pose.position.x - Obs_xy[0]) ** 2 + (current_pose.position.y - Obs_xy[1]) ** 2)
+        if d < 1.5:
+            if (abs(current_course-(math.atan2(Obs_xy[1]-current_pose.position.y,Obs_xy[0]-current_pose.position.x))))<math.pi/2:
+                if min_d > d:
+                    min_d = d
+                    nearest_point = [Obs_xy[0],Obs_xy[1]]
+                   
+                c=3 #0.01 10
+                if nearest_point!=None:
+                    current_po=[current_pose.position.x,current_pose.position.y]
+                    Frep_x=c*(current_po[0]-nearest_point[0])/min_d**2
+                    Frep_y=c*(current_po[1]-nearest_point[1])/min_d**2
+                Frep=[Frep_x,Frep_y]
+
+    r=1
+    print("nearest_point",nearest_point)
+    print("Frep =",len(Frep))
+    print("Frep =", Frep)
+    print("Fatt =", Fatt)
+
+    x_new=current_pose.position.x+(Fatt[0]+Frep[0])*dt*r
+    y_new=current_pose.position.y+(Fatt[1]+Frep[1])*dt*r
+
+    goal_pose.position.x=x_new
+    goal_pose.position.y=y_new
+    xn_new=list()
+    yn_new=list()
+    distance=list()
+    return goal_pose
+
+def main():
+    global dt, current_pose, current_course, goal_pose, cmd_vel_msg , u_v, u_rot, Ev, Erot,sumErot,sumEv, plot_x,plot_y, v_des, leinght_v,leinght_rot,v , finish_flag, goal_tolerance, dist, upper_limit_of_ki_sum, lower_limit_of_ki_sum, Ev_old, Erot_old, goal_new_p, point_cloud2, map, target_frame, source_frame
+
+    print("current_pose",current_pose)
+    print("goal_pose",goal_pose)
     v_des=trap_profile_linear_velocity(current_pose.position,goal_pose,max_vel)
     dx=(current_pose.position.x-plot_x[0])/dt
     
     dy=(current_pose.position.y-plot_y[0])/dt
     plot_x[0]=current_pose.position.x
     plot_y[0] = current_pose.position.y
-    #general velocity
+
     v = np.sqrt(dx**2+dy**2)
     Ev_old=Ev
     Ev=v_des-v
     sumEv=sumEv+Ev
     
     u_v=velocity_controller(Ev,Ev_old,sumEv,dt)
-    #constraints for lower and upper limits
+
     u_v_constraints = [min_vel,max_vel]
     u_alpha_constraints=[-max_angle,max_angle]
     upper_limit_of_ki_sum=1.0
@@ -195,8 +309,6 @@ def main():
 
     Erot=np.arctan2(goal_pose.position.y-current_pose.position.y,goal_pose.position.x-current_pose.position.x)-current_course 
     sumErot=sumErot+Erot
-    #if (abs(np.degrees(Erot))>90):
-    #    u_v=min_vel
 
     u_rot = rot_controller(Erot,Erot_old,sumErot,dt)
     if u_rot>u_alpha_constraints[1]:
@@ -215,6 +327,12 @@ def main():
     cmd_vel_msg.angular.z=vel_and_angle[1]
 
     return cmd_vel_msg
+
+
+def point_cloud2_clb(data):
+    global point_cloud2
+    point_cloud2=data
+    #print(point_cloud2)
 
 def goal_clb(data):
     #Get goal pose
@@ -238,6 +356,7 @@ def current_pose_clb(data):
 def laser_scan_clb(data):
     global lidar_arr
     lidar_arr=data.ranges
+
 
 def cfg_callback(config, level):
     global max_vel, min_vel, max_angle, init_server
@@ -276,6 +395,8 @@ def cfg_callback(config, level):
 
     return config
 
+
+
 def set_server_value(cfg_srv):
     global max_vel, min_vel, max_angle, init_server
 
@@ -308,7 +429,9 @@ def set_server_value(cfg_srv):
 def callback(config):
    rospy.loginfo("Config set to {max_vel}".format(**config))
 
+
 if __name__ == "__main__":
+
 
     # init ros node
     rospy.init_node('rc_pos_controller', anonymous=True)
@@ -360,7 +483,9 @@ if __name__ == "__main__":
     rospy.Subscriber(goal_topic, PoseStamped, goal_clb)
     rospy.Subscriber(pose_topic, PoseStamped, current_pose_clb)
     rospy.Subscriber(lidar_topic, LaserScan, laser_scan_clb)
+
     vec_pub = rospy.Publisher(cmd_vel_topic, Twist,  queue_size=10)
+    #new_goal_pub = rospy.Publisher(goal_topic, Pose, queue_size=10)
 
     listener = tf.TransformListener()
     old_ros_time = rospy.get_time()
@@ -380,8 +505,10 @@ if __name__ == "__main__":
                 continue
 
             old_ros_time = rospy.get_time()
+
             cmd_vel_msg = main()
-            goal_pose_msg = plan_virtual_fields() 
+           # goal_pose_msg = plan_virtual_fields()
+            step_1=step_1+1 
             if finish_flag:
                 if currentTime > 1.0:
                     print("pose controller: finish_flag True")
@@ -389,11 +516,14 @@ if __name__ == "__main__":
                 cmd_vel_msg.linear.x = 0.0
                 init_flag = False
 
-            vec_pub.publish(cmd_vel_msg) # publish msgs to the robot
+            vec_pub.publish(cmd_vel_msg)
+            #new_goal_pub.publish(goal_pose_msg) # publish msgs to the robot
             rate.sleep()
 
     except KeyboardInterrupt:   # if put ctr+c
         exit(0)
+
+
 
 
 

@@ -133,9 +133,9 @@ def rot_controller(Erot,Erot_old,sumErot,dT):
 #velocity motor regulator
 def velocity_controller(Ev, Ev_old,sumEv, dT):
     global kP_pose, kI_pose, kD_pose
-    kP_pose = 0.1
-    kI_pose= 0.87
-    kD_pose= 0.0001
+    kP_pose = 0.1 #0.1
+    kI_pose= 0.87 #0.87
+    kD_pose= 0.001
     u_v = kP_pose * Ev + kI_pose * sumEv + kD_pose *(Ev-Ev_old) / dT
     return u_v
 
@@ -283,6 +283,7 @@ def main():
     print("current_pose",current_pose)
     print("goal_pose",goal_pose)
     v_des=trap_profile_linear_velocity(current_pose.position,goal_pose,max_vel)
+    
     dx=(current_pose.position.x-plot_x[0])/dt
     
     dy=(current_pose.position.y-plot_y[0])/dt
@@ -295,6 +296,8 @@ def main():
     sumEv=sumEv+Ev
     
     u_v=velocity_controller(Ev,Ev_old,sumEv,dt)
+    if (abs(current_course-(math.atan2(goal_pose.position.y-current_pose.position.y,goal_pose.position.x-current_pose.position.x))))>3*math.pi/4:
+        u_v=-2.5
 
     u_v_constraints = [min_vel,max_vel]
     u_alpha_constraints=[-max_angle,max_angle]
@@ -320,6 +323,7 @@ def main():
     if sumErot<=lower_limit_of_ki_sum:
         sumErot=lower_limit_of_ki_sum
     vel_and_angle=[u_v,u_rot]
+    print('u_v=',u_v)
     #output values of velocity and rotation
     vel_and_angle=[u_v,u_rot]
     cmd_vel_msg.linear.x=vel_and_angle[0]

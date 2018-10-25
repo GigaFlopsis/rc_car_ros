@@ -113,16 +113,18 @@ def get_distance_to(a,b):
 
 
 def coordinates_obstacles():
-    global current_course, Obs_xy, lid_and_vec, lidar_arr, xn, yn, x_matrix, y_matrix, phi_new_vec, lid_ang_vec, phi_new_x, phi_new_y, lid_new_x, lid_new_y, lidar_arr_new, distance #, x_new, y_new
+    global current_course, Obs_xy, lid_and_vec, lidar_arr, xn, yn, x_matrix, y_matrix, phi_new_vec, lid_ang_vec, phi_new_x, phi_new_y, lid_new_x, lid_new_y, lidar_arr_new, distance, cloud_of_np_global,d 
     alpha=math.radians(360)
     step=math.radians(1)
     lid = np.arange(-alpha/2,alpha/2+step,step)
-
+ 
     print("len_lidar",len(lidar_arr))
     print("lid_len",len(lid))
     lid_ang_vec =np.transpose(lid)
     print("lid_ang_vec",len(lid_ang_vec))
-
+    cloud_of_nearest_points=list()
+    cloud_rotated=list()
+    cloud_of_np_global=list()
     phi_new_x=list()
     phi_new_y=list()
     lid_new_x=list()
@@ -144,7 +146,7 @@ def coordinates_obstacles():
     print('Phi_new_vec_y',len(phi_new_y))
 
     yn = lid_new_y
-    xn = lid_new_x
+    xn = lid_new_x 
     for i in range(len(xn)):
         if not np.isinf(xn[i]) and not np.isinf(yn[i]):
             xn_new.append(-xn[i])
@@ -153,84 +155,104 @@ def coordinates_obstacles():
     print("yn =",len(yn_new))
     for i in range(len(xn_new)):
         distance.append(math.sqrt((xn_new[i])**2+(yn_new[i])**2))
+        if distance[i]<1.5:
+            cloud_of_nearest_points.append(np.array([[xn_new[i]],[yn_new[i]]]))
     min_i =  distance.index(min(distance))
+    d=distance[min_i]
     rotate=np.array([[math.cos(current_course),-math.sin(current_course)],
                      [math.sin(current_course),math.cos(current_course)]])
-    nearest_point=np.array([[xn_new[min_i]],
-                       [yn_new[min_i]]])
-    nearest_p_in_global=np.dot(rotate,nearest_point)
-    x=nearest_p_in_global[0]+current_pose.pose.position.x
-    y=nearest_p_in_global[1]+current_pose.pose.position.y
-    Obs_xy=[x,y]
-    print(Obs_xy)
-
-
+    
+    for i in range(len(cloud_of_nearest_points)):
+        cloud_rotated.append(np.dot(rotate,cloud_of_nearest_points[i]))
+    
+    for i in range(len(cloud_rotated)):
+        cloud_of_np_global.append(np.array([[cloud_rotated[i][0]+current_pose.position.x],[cloud_rotated[i][1]+current_pose.position.y]]))
+    print('cloud_of_np_global',cloud_of_np_global)
+    #nearest_p_in_global=np.dot(rotate,nearest_point)
+    #x=nearest_p_in_global[0]+current_pose.position.x
+    #y=nearest_p_in_global[1]+current_pose.position.y
+    #x=cloud_of_np_global[0][0]
+    #y=cloud_of_np_global[0][1]
+    #Obs_xy=[x,y]
+    #print("Obs_xy",Obs_xy)
 
 def plan_virtual_fields():
-    global goal_pose, goal_topic,current_pose, first_waypoint_in_route, Frep, nearest_point, dist_goal, Obs_xy, dt, i, nearest_point, dist ,xn_new, yn_new, step_1, goal_new_p, Ev, Ev_old, sumEv, Erot, Erot_old, sumErot, finish_flag, range_dia, aproximation_point, lidar_arr_new, distance, point_cloud, Obs_xy
-
+    global goal_pose, goal_topic,current_pose, first_waypoint_in_route, Frep, nearest_point, dist_goal, Obs_xy, dt, i, nearest_point, dist ,xn_new, yn_new, step_1, goal_new_p, Ev, Ev_old, sumEv, Erot, Erot_old, sumErot, finish_flag, range_dia, aproximation_point, lidar_arr_new, distance, point_cloud, Obs_xy, cloud_of_np_global,d
+ 
+    
     coordinates_obstacles()
-    if (np.sqrt((goal_pose.pose.position.x-current_pose.pose.position.x)**2+(goal_pose.pose.position.y-current_pose.pose.position.y)**2))>0.2 and step_1==1:
+    if get_distance_to(current_pose,goal_pose)>0.2 and step_1==1:
         if len(goal_new_p)<2:
-            goal_new_p.append(goal_pose.pose.position.x)
-            goal_new_p.append(goal_pose.pose.position.y)
-    dist=np.sqrt((goal_new_p[0]-current_pose.pose.position.x)**2+(goal_new_p[1]-current_pose.pose.position.y)**2)
+            goal_new_p.append(goal_pose.position.x)
+            goal_new_p.append(goal_pose.position.y)
+    dist=np.sqrt((goal_new_p[0]-current_pose.position.x)**2+(goal_new_p[1]-current_pose.position.y)**2)
     print("dist= ",dist)
 
     if (abs(dist) < goal_tolerance):
+        Ev=0
+        Ev_old=0
+        sumEv=0
+        Erot=0
+        Erot_old=0
+        sumErot=0
         finish_flag=True
     #else:
     print("step_1",step_1)
     print("goal_new_p",goal_new_p)
     Frep=[0,0]
-    dist_goal = np.sqrt((-goal_pose.pose.position.x+current_pose.pose.position.x)**2+(-goal_pose.pose.position.y+current_pose.pose.position.y)**2)
+    dist_goal = get_distance_to(current_pose, goal_pose)
     k=2
 
-    goal_p=np.array([goal_pose.pose.position.x,goal_pose.pose.position.y])
-    current_p=np.array([current_pose.pose.position.x,current_pose.pose.position.y])
+    goal_p=np.array([goal_pose.position.x,goal_pose.position.y])
+    current_p=np.array([current_pose.position.x,current_pose.position.y])
 
     Fatt=k*(goal_new_p-current_p)/dist_goal #goal_p
     print("goal_p",goal_p)
-    print("current_p",current_pose)
+    print("current_p",current_p)
     print("Fatt", len(Fatt))
     print('xn_new_len',len(xn_new))
     if len(xn_new)!=0:
         nearest_point=None
+        Frep_x_prev=0
+        Frep_y_prev=0
+        Frep_xn=0
+        Frep_yn=0
         min_d = np.inf
-        d = math.sqrt((current_pose.pose.position.x - Obs_xy[0]) ** 2 + (current_pose.pose.position.y - Obs_xy[1]) ** 2)
+        #d = math.sqrt((current_pose.position.x - Obs_xy[0]) ** 2 + (current_pose.position.y - Obs_xy[1]) ** 2)
         if d < 1.5:
-            if (abs(current_course-(math.atan2(Obs_xy[1]-current_pose.pose.position.y,Obs_xy[0]-current_pose.pose.position.x))))<math.pi/2:
-                if min_d > d:
-                    min_d = d
-                    nearest_point = [Obs_xy[0],Obs_xy[1]]
+            if min_d > d:
+                min_d = d
+                nearest_point =1
 
-                c=3 #0.01 10
-                if nearest_point!=None:
-                    current_po=[current_pose.pose.position.x,current_pose.pose.position.y]
-                    Frep_x=c*(current_po[0]-nearest_point[0])/min_d**2
-                    Frep_y=c*(current_po[1]-nearest_point[1])/min_d**2
-                Frep=[Frep_x,Frep_y]
+        c=2 #0.01 10
+        if nearest_point!=None:
+            current_po=[current_pose.position.x,current_pose.position.y]
+            for i in range(len(cloud_of_np_global)):
+                Frep_xn = (current_po[0]-cloud_of_np_global[i][0])+Frep_x_prev
+                Frep_yn = (current_po[1]-cloud_of_np_global[1][1])+Frep_y_prev
+                Frep_x_prev = Frep_xn
+                Frep_y_prev = Frep_yn
+        Frep_x = (c*(Frep_xn)/min_d**2)
+        Frep_y = (c*(Frep_yn)/min_d**2)
+        Frep=[Frep_x,Frep_y]
 
-    r=0.5
+    r=1
     print("nearest_point",nearest_point)
     print("Frep =",len(Frep))
     print("Frep =", Frep)
     print("Fatt =", Fatt)
 
-    x_new=current_pose.pose.position.x+(Fatt[0]+Frep[0])*dt*r
-    y_new=current_pose.pose.position.y+(Fatt[1]+Frep[1])*dt*r
-    goal_pose.pose.position.x=x_new
-    goal_pose.pose.position.y=y_new
+    x_new=current_pose.position.x+(Fatt[0]+Frep[0])*dt*r
+    y_new=current_pose.position.y+(Fatt[1]+Frep[1])*dt*r
+
+    goal_pose.position.x=x_new
+    goal_pose.position.y=y_new
     xn_new=list()
     yn_new=list()
     distance=list()
     return goal_pose
 
 
-#def point_cloud2_clb(data):
-#    global point_cloud2
-#    point_cloud2=data
-#    print(point_cloud2)
 
 def goal_clb(data):
     #Get goal poserr
