@@ -14,7 +14,7 @@
 	<param name="servo_offset" value="47"/>    
 	<param name="motor_pin" value="4"/>
 	<param name="middle_motor" value="1550"/>
-	<param name="revers_servo" value="True"/>
+	<param name="revers_servo" value="False"/>
 	</node>
 
 	<!--pose controller -->	

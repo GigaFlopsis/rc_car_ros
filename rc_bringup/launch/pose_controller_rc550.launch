@@ -8,8 +8,8 @@
 	<param name="cmd_vel" value="cmd_vel"/>
 	<param name="pwm_topic" value="pwm"/>
 	<param name="drive_topic" value="ackermann_cmd"/>
-	<param name="max_vel" value="1"/>
-	<param name="min_vel" value="-1"/>
+	<param name="max_vel" value="2.5"/>
+	<param name="min_vel" value="-2.5"/>
 	<param name="wheelbase" value="0.28"/>
 	<param name="max_steering_angle" value="25.0"/>
 	<param name="servo_pin" value="22"/>
@@ -17,7 +17,7 @@
 	<param name="servo_offset" value="47"/>    
 	<param name="motor_pin" value="4"/>
 	<param name="middle_motor" value="1550"/>
-        <param name="revers_servo" value="False"/>
+        <param name="revers_servo" value="True"/>
 	</node>
 
        
@@ -33,30 +33,30 @@
                 <param name="goal_topic" value="goal"/>
                 <param name="local_goal_topic" value="local_goal"/>
 
-                <!--<param name="max_vel" value="0.9"/>
-                <param name="min_vel" value="-1"/>
+                <param name="max_vel" value="0.6"/>
+                <param name="min_vel" value="-2.5"/>
                 <param name="max_angle" value="25.0"/>-->
                 <param name="goal_tolerance" value="0.2"/>
 
-                <param name="kP_pose" value="4.5"/>
+                <param name="kP_pose" value="3.5"/>
                 <param name="kI_pose" value="0.0"/>
-                <param name="kD_pose" value="0.4"/>
-                <param name="kP_course" value="1.4"/>
-                <param name="kI_course" value="0.0"/>
+                <param name="kD_pose" value="0.001"/>
+                <param name="kP_course" value="2.4"/>
+                <param name="kI_course" value="0.1"/>
                 <param name="kD_course" value="0.4"/>
         </node>
 
         
-        <node pkg="rc_bringup" name="potential_fields" type="potential_fields_with_vector_group.py" respawn="true" output="screen">
+        <!--<node pkg="rc_bringup" name="potential_fields" type="potential_fields_with_vector_group.py" respawn="true" output="screen"> -->
         <!--<node pkg="rc_bringup" name="rc_pose_controller" type="pose_controller_with_vector_group.py" respawn="true" output="screen">-->
                 <!--param name="pose_topic" value="mavros/local_position/pose"/-->
-                <param name="pose_topic" value="pose"/>
+                <!--<param name="pose_topic" value="pose"/>
                 <param name="goal_topic" value="goal"/>
                 <param name="goal_tolerance" value="0.2"/>
-        </node>
+        </node>-->
 
-       <!--
-        <node pkg="rc_bringup" name="rc_route_generator" type="route_generation.py" respawn="true"/> -->
+       
+        <!--<node pkg="rc_bringup" name="rc_route_generator" type="route_generation.py" respawn="true"/> -->
         
       <!--  <node pkg="rc_bringup" name="rc_pot_fields" type="pose_controller_with_reg_func4_5_dif_coeff.py" respawn="true" output="screen"/>
       -->

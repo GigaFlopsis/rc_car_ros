@@ -12,10 +12,10 @@ from geometry_msgs.msg import Pose, PoseStamped
 #from visualisation_msgs.msg import Marker
 
 route= list()
-goal_pose = Pose()
-current_pose = Pose()
+goal_pose = PoseStamped()
+current_pose = PoseStamped()
 local_finish_flag=False
-first_waypoint_in_route = Pose()
+first_waypoint_in_route = PoseStamped()
 dist=0.0
 goal_tolerance=0.2
 #Markers=Marker()
@@ -83,6 +83,46 @@ def route_function():
 
 if __name__ == "__main__":
     try:
-        route_function()
+    rospy.init_node('rc_route_generator', anonymous=True)
+    rate = rospy.Rate(10)  # 10hz
+
+    # start subscriber
+    pub=rospy.Publisher(goal_topic, Pose, queue_size=10)
+    rospy.Subscriber(goal_topic, PoseStamped, goal_clb)
+    rospy.Subscriber(pose_topic, PoseStamped, current_pose_clb)
+    listener = tf.TransformListener()
+
+
+        old_ros_time = rospy.get_time()
+    currentTime = 0.0
+    rate.sleep()
+
+    try:
+        while not rospy.is_shutdown():
+            dt = rospy.get_time() - old_ros_time
+            currentTime += dt
+
+
+            if(not init_flag):
+                if currentTime > 1.0:
+                    print("pose controller: not init")
+                    currentTime =  0.0
+                continue
+
+            old_ros_time = rospy.get_time()
+
+            route_function()
+           
+            if finish_flag:
+                if currentTime > 1.0:
+                    print("pose controller: finish_flag True")
+                    currentTime = 0.0
+                cmd_vel_msg.linear.x = 0.0
+                init_flag = False
+
+            pub.publish(first_waypoint_in_route)
+            rate.sleep()
+
     except KeyboardInterrupt:   # if put ctr+c
         exit(0)
+

@@ -9,6 +9,7 @@ import numpy as np
 import rospy
 import tf
 import tf2_ros
+import time
 import sensor_msgs.point_cloud2 as pc2
 import laser_geometry.laser_geometry as lg
 from tf2_sensor_msgs.tf2_sensor_msgs import do_transform_cloud
@@ -17,6 +18,7 @@ from sensor_msgs.msg import PointCloud2, LaserScan
 from rc_bringup.cfg import PoseControllerConfig
 from dynamic_reconfigure.server import Server
 from pid_params_saver import YamlParams
+from rc_car_msgs.msg import CarParams, CarPwmContol
 
 #value
 velocity = float()
@@ -27,13 +29,14 @@ current_course = float()
 goal_pose = Pose()
 goal_pose_msg = Pose()
 goal_new=Pose()
-
+near_p=PoseStamped()
 init_flag = False
 max_vel = 1.1 # m/s
 min_vel = -1.5 # m/s
 max_angle = 25
 
 finish_flag = True
+flag_back=False
 goal_tolerance = 0.5
 dist=0.0
 
@@ -60,13 +63,13 @@ pc_msg = PointCloud2()
 lp = lg.LaserProjection()
 
 #PID
-kP_pose=float
-kI_pose=float
-kD_pose=float
+kP_pose=0.1
+kI_pose=0.87
+kD_pose=10
 
-kP_course=float
-kI_course=float
-kD_course=float
+kP_course=0.5
+kI_course=0.001
+kD_course=0.0001
 
 #reg_functions
 v_des=0.0
@@ -94,6 +97,7 @@ lidar_arr=list()
 x_matrix=list()
 y_matrix=list()
 nearest_point= list()
+nearest_p=PoseStamped()
 i=0
 j=0
 k=0
@@ -109,9 +113,13 @@ lid_new_y=list()
 range_dia=None
 goal_new_p=list()
 step_1=1
-
+zeroth_val=Twist()
+trial=int()
+zero=CarPwmContol()
 aproximation_point=None
 point_cloud2=PointCloud2()
+
+integrator=int()
 #trap function for velocity
 def trap_profile_linear_velocity(x, xy_des, v_max): 
     d = np.sqrt((x.x - xy_des.position.x) ** 2 + (x.y - xy_des.position.y) ** 2)
@@ -124,18 +132,18 @@ def trap_profile_linear_velocity(x, xy_des, v_max):
 #rotatin servo regulator
 def rot_controller(Erot,Erot_old,sumErot,dT):
     global kP_course, kI_course, kD_course
-    kP_course = 0.5 #0.435
-    kI_course = 0.001 #0.003
-    kD_course = 0.0001 #0.00001 
+    #kP_course = 0.5 #0.435
+    #kI_course = 0.001 #0.003
+    #kD_course = 0.0001 #0.00001 
     u_rot = kP_course * Erot + kI_course * sumErot + kD_course *(Erot-Erot_old) / dT
     return u_rot
 
 #velocity motor regulator
 def velocity_controller(Ev, Ev_old,sumEv, dT):
     global kP_pose, kI_pose, kD_pose
-    kP_pose = 0.1 #0.1
-    kI_pose= 0.87 #0.87
-    kD_pose= 0.001
+    #kP_pose = 0.1 #0.1
+    #kI_pose= 0.87 #0.87
+    #kD_pose= 0.001
     u_v = kP_pose * Ev + kI_pose * sumEv + kD_pose *(Ev-Ev_old) / dT
     return u_v
 
@@ -155,9 +163,14 @@ def get_distance_to(a,b):
     dist = np.linalg.norm(pos)
     return dist
 
+def global2local(goal_pose,current_pose,current_course):
+    loc=PoseStamped()
+    loc.pose.position.x=(goal_pose.position.x-current_pose.position.x)*math.cos(current_course)+(goal_pose.position.y-current_pose.position.y)*math.sin(current_course)
+    loc.pose.position.y=-(goal_pose.position.x-current_pose.position.x)*math.sin(current_course)+(goal_pose.position.y-current_pose.position.y)*math.cos(current_course)
+    return loc
 
 def coordinates_obstacles():
-    global current_course, Obs_xy, lid_and_vec, lidar_arr, xn, yn, x_matrix, y_matrix, phi_new_vec, lid_ang_vec, phi_new_x, phi_new_y, lid_new_x, lid_new_y, lidar_arr_new, distance #, x_new, y_new
+    global current_course, Obs_xy, lid_and_vec, lidar_arr, xn, yn, x_matrix, y_matrix, phi_new_vec, lid_ang_vec, phi_new_x, phi_new_y, lid_new_x, lid_new_y, lidar_arr_new, distance, nearest_p #, x_new, y_new
     alpha=math.radians(360)
     step=math.radians(1)
     lid = np.arange(-alpha/2,alpha/2+step,step)
@@ -205,15 +218,18 @@ def coordinates_obstacles():
     nearest_p_in_global=np.dot(rotate,nearest_point)
     x=nearest_p_in_global[0]+current_pose.position.x
     y=nearest_p_in_global[1]+current_pose.position.y
+    nearest_p.pose.position.x = x
+    nearest_p.pose.position.y = y
     Obs_xy=[x,y]
     print(Obs_xy)
+    return nearest_p
 
 
 
 def plan_virtual_fields():
     global goal_pose, goal_topic,current_pose, first_waypoint_in_route, Frep, nearest_point, dist_goal, Obs_xy, dt, i, nearest_point, dist ,xn_new, yn_new, step_1, goal_new_p, Ev, Ev_old, sumEv, Erot, Erot_old, sumErot, finish_flag, range_dia, aproximation_point, lidar_arr_new, distance, point_cloud, Obs_xy
     
-    coordinates_obstacles()
+    #coordinates_obstacles()
     if get_distance_to(current_pose,goal_pose)>0.2 and step_1==1:
         if len(goal_new_p)<2:
             goal_new_p.append(goal_pose.position.x)
@@ -279,8 +295,8 @@ def plan_virtual_fields():
 
 def main():
     global dt, current_pose, current_course, goal_pose, cmd_vel_msg , u_v, u_rot, Ev, Erot,sumErot,sumEv, plot_x,plot_y, v_des, leinght_v,leinght_rot,v , finish_flag, goal_tolerance, dist, upper_limit_of_ki_sum, lower_limit_of_ki_sum, Ev_old, Erot_old, goal_new_p, point_cloud2, map, target_frame, source_frame
-
-    print("current_pose",current_pose)
+    loc=global2local(goal_pose,current_pose,current_course)
+    #print("current_pose",current_pose)
     print("goal_pose",goal_pose)
     v_des=trap_profile_linear_velocity(current_pose.position,goal_pose,max_vel)
     
@@ -291,13 +307,19 @@ def main():
     plot_y[0] = current_pose.position.y
 
     v = np.sqrt(dx**2+dy**2)
+    if v!=0:
+        if v>max_vel:
+            v=max_vel
+        if v<min_vel:
+            v=min_vel
+
     Ev_old=Ev
     Ev=v_des-v
     sumEv=sumEv+Ev
     
     u_v=velocity_controller(Ev,Ev_old,sumEv,dt)
-    if (abs(current_course-(math.atan2(goal_pose.position.y-current_pose.position.y,goal_pose.position.x-current_pose.position.x))))>3*math.pi/4:
-        u_v=-2.5
+   # if (abs(current_course-(math.atan2(goal_pose.position.y-current_pose.position.y,goal_pose.position.x-current_pose.position.x))))>3*math.pi/6:
+   #     u_v=-2.5
 
     u_v_constraints = [min_vel,max_vel]
     u_alpha_constraints=[-max_angle,max_angle]
@@ -310,7 +332,8 @@ def main():
         u_v = u_v_constraints[0]
     Erot_old=Erot
 
-    Erot=np.arctan2(goal_pose.position.y-current_pose.position.y,goal_pose.position.x-current_pose.position.x)-current_course 
+    #Erot=np.arctan2(goal_pose.position.y-current_pose.position.y,goal_pose.position.x-current_pose.position.x)-current_course 
+    Erot=np.arctan2(loc.pose.position.y,loc.pose.position.x)
     sumErot=sumErot+Erot
 
     u_rot = rot_controller(Erot,Erot_old,sumErot,dt)
@@ -322,8 +345,10 @@ def main():
         sumErot=upper_limit_of_ki_sum
     if sumErot<=lower_limit_of_ki_sum:
         sumErot=lower_limit_of_ki_sum
+    if (abs(current_course-(math.atan2(goal_pose.position.y-current_pose.position.y,goal_pose.position.x-current_pose.position.x))))>4*math.pi/6 and get_distance_to(goal_pose,current_pose)<=3:
+        u_v=-1
     vel_and_angle=[u_v,u_rot]
-    print('u_v=',u_v)
+    #print('u_v=',u_v)
     #output values of velocity and rotation
     vel_and_angle=[u_v,u_rot]
     cmd_vel_msg.linear.x=vel_and_angle[0]
@@ -333,9 +358,9 @@ def main():
     return cmd_vel_msg
 
 
-def point_cloud2_clb(data):
-    global point_cloud2
-    point_cloud2=data
+#def point_cloud2_clb(data):
+#    global point_cloud2
+#    point_cloud2=data
     #print(point_cloud2)
 
 def goal_clb(data):
@@ -363,7 +388,7 @@ def laser_scan_clb(data):
 
 
 def cfg_callback(config, level):
-    global max_vel, min_vel, max_angle, init_server
+    global max_vel, min_vel, max_angle, kP_pose, kI_pose, kD_pose, kP_course, kI_course, kD_course, init_server
 
     max_vel = float(config["max_vel"])
     min_vel = float(config["min_vel"])
@@ -402,7 +427,7 @@ def cfg_callback(config, level):
 
 
 def set_server_value(cfg_srv):
-    global max_vel, min_vel, max_angle, init_server
+    global max_vel, min_vel, max_angle, kP_pose,kI_pose,kD_pose,kP_course,kI_course,kD_course , init_server
 
     pps.params_open()
     print ("open from set server value")
@@ -432,6 +457,18 @@ def set_server_value(cfg_srv):
 
 def callback(config):
    rospy.loginfo("Config set to {max_vel}".format(**config))
+   rospy.loginfo("Config set to {min_vel}".format(**config))
+   rospy.loginfo("Config set to {kP_pose}".format(**config))
+   rospy.loginfo("Config set to {kI_pose}".format(**config))
+   rospy.loginfo("Config set to {kD_pose}".format(**config))
+   rospy.loginfo("Config set to {kP_course}".format(**config))
+   rospy.loginfo("Config set to {kI_course}".format(**config))
+   rospy.loginfo("Config set to {kD_course}".format(**config))
+
+
+
+
+
 
 
 if __name__ == "__main__":
@@ -490,7 +527,8 @@ if __name__ == "__main__":
 
     vec_pub = rospy.Publisher(cmd_vel_topic, Twist,  queue_size=10)
     #new_goal_pub = rospy.Publisher(goal_topic, Pose, queue_size=10)
-
+    near_pub= rospy.Publisher('nearest_point', PoseStamped, queue_size=10)
+    zero_pub= rospy.Publisher("pwm",CarPwmContol, queue_size=10)
     listener = tf.TransformListener()
     old_ros_time = rospy.get_time()
     currentTime = 0.0
@@ -504,28 +542,61 @@ if __name__ == "__main__":
 
             if(not init_flag):
                 if currentTime > 1.0:
-                    print("pose controller: not init")
+                    #print("pose controller: not init")
                     currentTime =  0.0
                 continue
 
             old_ros_time = rospy.get_time()
-
+            print('finish_flag',finish_flag)
             cmd_vel_msg = main()
+           # near_p = coordinates_obstacles()
            # goal_pose_msg = plan_virtual_fields()
-            step_1=step_1+1 
+            step_1=step_1+1
             if finish_flag:
                 if currentTime > 1.0:
                     print("pose controller: finish_flag True")
                     currentTime = 0.0
+                    goal_pose=current_pose
+                    finish_flag=False
                 cmd_vel_msg.linear.x = 0.0
                 init_flag = False
 
-            vec_pub.publish(cmd_vel_msg)
-            #new_goal_pub.publish(goal_pose_msg) # publish msgs to the robot
-            rate.sleep()
+            if flag_back==True:
+                if cmd_vel_msg.linear.x<0:
+                    time.sleep(0.5)
+                    vec_pub.publish(cmd_vel_msg)
+                    print('1')
+           	elif cmd_vel_msg.linear.x>0:
+                    print('2')
+                    flag_back=False
+                    integrator=0
 
+            if flag_back==False:
+                if cmd_vel_msg.linear.x<0:
+                    zeroth_val.linear.x=0
+                    vec_pub.publish(cmd_vel_msg)
+                    time.sleep(0.5)
+                    vec_pub.publish(zeroth_val)
+                    time.sleep(0.5)
+                    vec_pub.publish(cmd_vel_msg)
+                    trial+=1
+                    print('3')
+                    print("RGHAAAAAAAAAH")
+                    flag_back=True
+                   # cmd_vel_msg.linear.x=0
+                   # vec_pub.publish(cmd_vel_msg)
+                elif cmd_vel_msg.linear.x>0:
+                    print('4')
+                    vec_pub.publish(cmd_vel_msg)
+            #vec_pub.publish(cmd_vel_msg)
+            #print("flag_back",flag_back)
+   #print("try",trial)
+    #near_pub.publish(near_p)
+       #new_goal_pub.publish(goal_pose_msg) # publish msgs to the robot
+            rate.sleep()
     except KeyboardInterrupt:   # if put ctr+c
         exit(0)
+
 
 
 
