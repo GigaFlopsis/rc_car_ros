@@ -10,7 +10,6 @@ import time
 import numpy as np
 import math
 import tf
-import serial
 from enum import Enum
 
 import rospy
@@ -90,43 +89,6 @@ pwm_output_msg = CarPwmContol()
 
 hz = 50
 time_clb = 0.0
-vel1=float()
-vel2=float()
-vel=float()
-
-def Read_Weight():
-    global vel,vel1,vel2
-    ser = serial.Serial(
-    port='/dev/ttyACM0',
-    baudrate = 115200,
-    bytesize = serial.EIGHTBITS,
-    parity = serial.PARITY_NONE,
-    stopbits = serial.STOPBITS_ONE,
-    xonxoff = False,
-    rtscts = False,
-    dsrdtr = False,
-    timeout = 1)
-    ser.isOpen()
-    data = ser.readline()
-    print("Serial",data)
-    r=0
-    for i in range(len(data)):
-        if 'l'==data[i]:
-            l=i
-        if 'f'==data[i]:
-            f=i
-        if 's'==data[i]:
-            s=i
-    dist1=data[r+1:f-1]
-    dist2=data[l+1:s-1]
-    vel1=float(dist1)
-    vel2=float(dist2)
-    print("vel1",vel1)
-    print("vel2",vel2)
-    vel=(vel1+vel2)/(2*100)
-    print("vel",vel)
-    #ser.isClosed()
-    return vel
 
 def convert_trans_rot_vel_to_steering_angle(v, omega, wheelbase):
   global max_angle
@@ -207,7 +169,6 @@ def velocity_clb(data):
                        [-data.twist.linear.y]])
     vector=np.dot(rotate,velocity)
     norm_velocity =vector[0]
-
 #    print("vector:",vector[0],vector[1])
     current_mode = RemoteMode.vel
     time_clb = 0.0
@@ -266,7 +227,7 @@ def set_rc_remote(mode):
     """
     global vel_msg, pwm_msg, \
         intercept_remote, revers_val, \
-        max_angle, wheelbase, drive_msg, pwm_output_msg, prev_vel, use_imu_vel, motor_pid,vel
+        max_angle, wheelbase, drive_msg, pwm_output_msg, prev_vel, use_imu_vel, motor_pid
 
     motor_val = 0.0
 
@@ -313,12 +274,9 @@ def set_rc_remote(mode):
             # PID controlled
             # motor_val = valmap(vel_msg.linear.x, -2.4, 2.4, 1200, 1600, False)
             setPIDk() #set PID coefficients
-            vel=Read_Weight()
-            print("check vel",vel)
-            error_vel = vel - vel_msg.linear.x
+            error_vel = norm_velocity - vel_msg.linear.x
             motor_pid.update(error_vel)
             motor_val = motor_pid.output + middle_motor
-            #print("incoder vel", vel)
         else:
             # use relative velocity
             if vel_msg.linear.x >= 0.0:
@@ -329,10 +287,10 @@ def set_rc_remote(mode):
 
         # Send to pwm motor
         pi.set_servo_pulsewidth(motor_pin, motor_val)
-        motor_val = np.clip(motor_val, 1000, 2000)        
+        motor_val = np.clip(motor_val, 1000, 2000)
         pwm_output_msg.MotorPWM = motor_val
         prev_vel = vel_msg.linear.x #read prev velocity value
-        
+
     elif mode == RemoteMode.drive:
         # send servo
         v = drive_msg.drive.speed
@@ -522,21 +480,17 @@ if __name__ == "__main__":
                                           revers_servo))
         while not rospy.is_shutdown():
             try:
-               
                 time_clb += 1.0 / hz
 
                 if time_clb < 1.0 and motor_run:
                     set_rc_remote(current_mode)     # set pwm mode
-                    
-                    
-                   # print("value",value)
 
                 else:           # not cld remote data break pwm
                     pi.set_servo_pulsewidth(servo_pin, 0)
                     pi.set_servo_pulsewidth(motor_pin, 0)
             except:
                 pi.set_servo_pulsewidth(servo_pin, 0)
-                pi.set_servo_pulsewidth(motor_pin, middle_motor)
+                pi.set_servo_pulsewidth(motor_pin, 0)
                 print("rc control: error")
 
             param_pub.publish(get_car_params())     #publish car params from topic
@@ -554,5 +508,3 @@ if __name__ == "__main__":
         pi.set_servo_pulsewidth(motor_pin, 0)
         pi.stop()
         GPIO.cleanup()
-
- 

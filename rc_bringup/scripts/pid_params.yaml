@@ -1,9 +1,9 @@
 kD_course: 0.0001
-kD_pose: 0.0
+kD_pose: 0.001
 kI_course: 0.001
 kI_pose: 1.0
 kP_course: 0.5
 kP_pose: 5.0
-max_angle: 25.0
-max_vel: 0.55
+max_angle: 26.5
+max_vel: 0.8
 min_vel: -2.2
