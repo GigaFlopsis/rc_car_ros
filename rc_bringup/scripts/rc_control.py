@@ -10,6 +10,7 @@ import time
 import numpy as np
 import math
 import tf
+import serial
 from enum import Enum
 
 import rospy
@@ -89,6 +90,22 @@ pwm_output_msg = CarPwmContol()
 
 hz = 50
 time_clb = 0.0
+
+def Read_Weight():
+    ser = serial.Serial(
+    port='/dev/ttyACM0',
+    baudrate = 115200,
+    bytesize = serial.EIGHTBITS,
+    parity = serial.PARITY_NONE,
+    stopbits = serial.STOPBITS_ONE,
+    xonxoff = False,
+    rtscts = False,
+    dsrdtr = False,
+    timeout = 1)
+    data = ser.readline()
+    print(type(data))
+    return data
+
 
 def convert_trans_rot_vel_to_steering_angle(v, omega, wheelbase):
   global max_angle
@@ -484,6 +501,9 @@ if __name__ == "__main__":
 
                 if time_clb < 1.0 and motor_run:
                     set_rc_remote(current_mode)     # set pwm mode
+                   # value=float()
+                   # value=Read_Weight()
+                   # print("value",value)
 
                 else:           # not cld remote data break pwm
                     pi.set_servo_pulsewidth(servo_pin, 0)

@@ -149,15 +149,7 @@ def coordinates_obstacles():
     
     for i in range(len(cloud_rotated)):
         cloud_of_np_global.append(np.array([[cloud_rotated[i][0]+current_pose.pose.position.x],[cloud_rotated[i][1]+current_pose.pose.position.y]]))
-    #print('cloud_of_np_global',cloud_of_np_global)
-    #nearest_point = np.array([[xn_new[min_i]],
-    #                          [yn_new[min_i]]])
-    #nearest_p_in_global=np.dot(rotate,nearest_point)
-    #near_p.append(nearest_p_in_global[0]+current_pose.pose.position.x)
-    #near_p.append(nearest_p_in_global[1]+current_pose.pose.position.y)
-    #x=cloud_of_np_global[0][0]
-    #y=cloud_of_np_global[0][1]
-    #Obs_xy=[x,y]
+
 
 
 
@@ -214,7 +206,7 @@ def unstable_planner2D(Obs_xy, r, goal, x, y, phi, planning_distance):
             Oy=Obs_xy[index_obs][1]-y
             Rx=1*math.cos(phi)
             Ry=1*math.sin(phi)
-            print("((Ox*Rx+Oy*Ry)/(math.sqrt(Ox**2+Oy**2)*math.sqrt(Rx**2+Ry**2)))=",((Ox*Rx+Oy*Ry)/(math.sqrt(Ox**2+Oy**2)*math.sqrt(Rx**2+Ry**2))))
+            
             angle_robot_Obs=np.arccos((Ox*Rx+Oy*Ry)/(math.sqrt(Ox**2+Oy**2)*math.sqrt(Rx**2+Ry**2)))
             if (abs(angle_robot_Obs)<math.pi/2):
                 kvec=Rx*Oy-Ry*Ox
@@ -231,6 +223,7 @@ def unstable_planner2D(Obs_xy, r, goal, x, y, phi, planning_distance):
     new_goal.pose.position.x=res[0]
     new_goal.pose.position.y=res[1]
     new_goal.pose.orientation.w=res[2]
+    print("new_goal",new_goal)
 
     Obs_xy=list()
     xn_new=list()
@@ -255,8 +248,8 @@ def PI_planner2D(x,y,goal,planning_distance):
         intersection_line_normal_res=intersection_line_normal(A,B,C,A1,B1,C1)
         xr=intersection_line_normal_res[0]
         yr=intersection_line_normal_res[1]
-        ex=goal[3]-x
-        ey=goal[4]-y
+        ex=goal[2]-x
+        ey=goal[3]-y
         if (planning_distance<math.sqrt((x-goal[2])**2+(y-goal[3])**2)):
             find_next_point_res=find_next_point(xr,yr,goal[2],goal[3],planning_distance)
             xn=find_next_point_res[0]
@@ -326,7 +319,7 @@ if __name__ == "__main__":
 
     # init ros node
     rospy.init_node('potential_fields', anonymous=True)
-    rate = rospy.Rate(20)  # 10hz
+    rate = rospy.Rate(10)  # 10hz
 
     rospy.Subscriber(goal_topic, PoseStamped, goal_clb)
     rospy.Subscriber(pose_topic, PoseStamped, current_pose_clb)
@@ -350,15 +343,12 @@ if __name__ == "__main__":
                     #print("pose controller: not init")
                     currentTime =  0.0
                 continue
-            if len(goal_new_p) < 2:
-                goal_new_p.append(goal_pose.pose.position.x)
-                goal_new_p.append(goal_pose.pose.position.y)
+            goal_new_p=[1,1,2.5,3]
             old_ros_time = rospy.get_time()
             #goal_pose_msg = plan_virtual_fields()
             coordinates_obstacles()
             goal_pose_msg= unstable_planner2D(cloud_of_np_global,1, goal_new_p, current_pose.pose.position.x, current_pose.pose.position.y, current_course, 1)
-            print("goal_new_p=",goal_new_p)
-            step_1=step_1+1
+            
             if finish_flag:
                 if currentTime > 1.0:
                     print("pose controller: finish_flag True")
@@ -367,7 +357,7 @@ if __name__ == "__main__":
                     cmd_vel_msg.linear.x=0
                     #vec_pub.publish(cmd_vel_msg)
                     init_flag = False
-            print('goal_pose_msg =',goal_pose_msg)
+           
             new_goal_pub.publish(goal_pose_msg)
             rate.sleep()
 

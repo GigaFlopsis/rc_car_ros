@@ -47,7 +47,7 @@
         </node>
 
         
-        <!--<node pkg="rc_bringup" name="potential_fields" type="potential_fields_with_vector_group.py" respawn="true" output="screen"> -->
+        <node pkg="rc_bringup" name="unstable" type="unstable_planner.py" respawn="true" output="screen"/>
         <!--<node pkg="rc_bringup" name="rc_pose_controller" type="pose_controller_with_vector_group.py" respawn="true" output="screen">-->
                 <!--param name="pose_topic" value="mavros/local_position/pose"/-->
                 <!--<param name="pose_topic" value="pose"/>
