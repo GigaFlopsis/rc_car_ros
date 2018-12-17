@@ -22,7 +22,7 @@ from PID import PID
 
 from dynamic_reconfigure.server import Server
 from rc_bringup.cfg import RcVelControllerConfig
-
+from std_msgs.msg import Float64
 
 class RemoteMode(Enum):
     vel = 0
@@ -46,6 +46,7 @@ min_vel = -2.5 # min speed of the car
 max_angle = 25.0 # in degrees
 wheelbase = 0.28 # in meters
 prev_vel = 0.0
+vel=Float64()
 
 current_course = float()
 
@@ -134,17 +135,17 @@ def pwm_clb(data):
     current_mode = RemoteMode.pwm
     time_clb = 0.0
 
-def drive_vel_clb(data):
-    """
-       Get drive value from topic
-       :param data: velocity and  steering value
-       :type data: AckermannDriveStamped
-       """
-    global drive_msg,time_clb, max_vel, current_mode
-    drive_msg = data
-    drive_msg.drive.speed = np.clip(drive_msg.drive.speed, -max_vel, max_vel)
-    current_mode = RemoteMode.drive
-    time_clb = 0.0
+#def drive_vel_clb(data):
+#    """
+#       Get drive value from topic
+#       :param data: velocity and  steering value
+#       :type data: AckermannDriveStamped
+#       """
+#    global drive_msg,time_clb, max_vel, current_mode
+#    drive_msg = data
+#    drive_msg.drive.speed = np.clip(drive_msg.drive.speed, -max_vel, max_vel)
+#    current_mode = RemoteMode.drive
+#    time_clb = 0.0
 
 def current_pose_clb(data):
     """
@@ -157,6 +158,10 @@ def current_pose_clb(data):
     # convert euler from quaternion
     (roll, pitch, yaw) = tf.transformations.euler_from_quaternion(rot)
     current_course = yaw
+
+def encoder_vel_clb(data):
+    global vel
+    vel=data
 
 def velocity_clb(data):
     """
@@ -225,7 +230,7 @@ def setPIDk():
     motor_pid.setKi(kI)
     motor_pid.setKd(kD)
 
-def set_rc_remote(mode):
+def set_rc_remote():
     """
     Recalculation velocity data to pulse and set to PWM servo and motor
     :return:
@@ -266,8 +271,8 @@ def set_rc_remote(mode):
     # Send to pwm motor
     pi.set_servo_pulsewidth(motor_pin, motor_val)
     motor_val = np.clip(motor_val, 1000, 2000)        
-    if motor_val<=1569:
-        motor_val=1570
+    #if motor_val<=1569:
+    #    motor_val=1570
     pwm_output_msg.MotorPWM = motor_val
     prev_vel = vel_msg.linear.x #read prev velocity value
         
@@ -373,7 +378,7 @@ if __name__ == "__main__":
         # Subscribe and Publisher to topics
         rospy.Subscriber(cmd_vel_topic, Twist, cmd_vel_clb)
         rospy.Subscriber(pwm_topic, CarPwmContol, pwm_clb)
-        rospy.Subscriber(drive_topic, AckermannDriveStamped, drive_vel_clb)
+     #   rospy.Subscriber(drive_topic, AckermannDriveStamped, drive_vel_clb)
         rospy.Subscriber(vel_topic, TwistStamped, velocity_clb)
         rospy.Subscriber(pose_topic, PoseStamped, current_pose_clb)
         rospy.Subscriber(encoder_vel_topic,Float64, encoder_vel_clb)
@@ -419,7 +424,7 @@ if __name__ == "__main__":
                 time_clb += 1.0 / hz
 
                 if time_clb < 1.0 and motor_run:
-                    set_rc_remote(current_mode)     # set pwm mode
+                    set_rc_remote()     # set pwm mode
                     
                     
                    # print("value",value)

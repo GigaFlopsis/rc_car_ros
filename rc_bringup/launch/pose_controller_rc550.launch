@@ -2,7 +2,7 @@
 
 	<!--remote control -->	
 	  <arg name="map_file" default="$(find rc_bringup)/map/laba_209.yaml"/>
-
+        <node pkg="rc_bringup" name="encoders" type="read_from_encoders.py" respawn="true" output="screen"/>
         <!--remote controll -->
         <node pkg="rc_bringup" name="rc_node" type="rc_control.py" respawn="true" output="screen">
 	<param name="cmd_vel" value="cmd_vel"/>

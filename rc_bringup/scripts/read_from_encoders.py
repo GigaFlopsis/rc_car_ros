@@ -43,5 +43,5 @@ if __name__ == "__main__":
 		data = ser.readline()
 		if len(data) != 0:
 			for vel in data.split('\r\n'):
-				if vel != "":				
+				if vel != "":
 					vel_pub.publish(float(vel))
