@@ -44,4 +44,7 @@ if __name__ == "__main__":
 		if len(data) != 0:
 			for vel in data.split('\r\n'):
 				if vel != "":
-					vel_pub.publish(float(vel))
+					try:
+						vel_pub.publish(float(vel))
+					except:
+						print ("error pub", vel)
