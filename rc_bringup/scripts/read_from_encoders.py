@@ -12,7 +12,7 @@ from std_msgs.msg import Float64
 
 vel1=float()
 vel2=float()
-vel=float()
+odometry_vel=float()
 
 
 encoder_vel="/encoder_vel"
@@ -42,9 +42,9 @@ if __name__ == "__main__":
 		#vel_pub.publish(read_serial())     #publish car params from topic
 		data = ser.readline()
 		if len(data) != 0:
-			for vel in data.split('\r\n'):
-				if vel != "":
+			for odometry_vel in data.split('\r\n'):
+				if odometry_vel != "":
 					try:
-						vel_pub.publish(float(vel))
+						vel_pub.publish(float(odometry_vel))
 					except:
-						print ("error pub", vel)
+						print ("error pub", odometry_vel)

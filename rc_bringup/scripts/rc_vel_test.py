@@ -17,7 +17,7 @@ from rc_bringup.msg import CarPwmContol
 pwm = CarPwmContol()
 pwm.MotorPWM = 1550
 
-vel = TwistStamped()
+odometry_vel = TwistStamped()
 vel_norm = float()
 
 cmd_vel_topic = "velocity" # output topic
@@ -50,7 +50,7 @@ def vel_clb(data):
     Get current velocity from rc car
     :type data: TwistStamped
     """
-    global vel,vel_norm
+    global odometry_vel,vel_norm
     vel = data
     vel_norm = math.sqrt(data.twist.linear.x**2 + data.twist.linear.y**2)
 
